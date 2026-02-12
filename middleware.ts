@@ -41,8 +41,9 @@ export async function middleware(request: NextRequest) {
     "signup",
     "tenants",
   ])
-  const pathTenant =
-    pathSegments[0] && !reservedPaths.has(pathSegments[0]) ? pathSegments[0] : null
+  const firstSegment = pathSegments[0]
+  const isReservedPath = Boolean(firstSegment && reservedPaths.has(firstSegment))
+  const pathTenant = firstSegment && !isReservedPath ? firstSegment : null
   const hostTenant = resolveTenantFromHost(hostname, rootDomain)
 
   let tenant = pathTenant ?? hostTenant
@@ -53,7 +54,7 @@ export async function middleware(request: NextRequest) {
   tenant = normalizeTenantSlug(tenant)
   response.headers.set("x-tenant", tenant)
 
-  if (hostTenant && !pathTenant) {
+  if (hostTenant && !pathTenant && !isReservedPath) {
     url.pathname = `/${tenant}${url.pathname}`
     const rewriteResponse = NextResponse.rewrite(url)
     response.cookies.getAll().forEach((cookie) => {

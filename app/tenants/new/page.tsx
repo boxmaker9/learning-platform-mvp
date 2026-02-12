@@ -27,6 +27,11 @@ export default function TenantCreatePage() {
         body: JSON.stringify({ name, slug }),
       })
 
+      if (response.status === 401) {
+        window.location.href = "/login"
+        return
+      }
+
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string }
         throw new Error(payload.message ?? "作成に失敗しました。")
@@ -49,6 +54,13 @@ export default function TenantCreatePage() {
           <CardDescription>組織名とURL用のスラッグを入力してください。</CardDescription>
         </CardHeader>
         <CardContent>
+          <p className="text-xs text-slate-500">
+            ログインが必要です。未登録の場合は{" "}
+            <a className="font-medium text-primary-600 hover:underline" href="/signup">
+              新規登録
+            </a>{" "}
+            してください。
+          </p>
           <form className="space-y-4" onSubmit={onSubmit} aria-busy={isSubmitting}>
             <div className="space-y-2">
               <Label htmlFor="name">組織名</Label>
