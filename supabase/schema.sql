@@ -138,6 +138,18 @@ on public.organization_members for all
 using (public.is_org_admin(organization_id))
 with check (public.is_org_admin(organization_id));
 
+create policy "org creators can insert first admin"
+on public.organization_members for insert
+with check (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.organizations o
+    where o.id = organization_id
+      and o.created_by = auth.uid()
+  )
+);
+
 create policy "invitees can join"
 on public.organization_members for insert
 with check (

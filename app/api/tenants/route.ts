@@ -37,7 +37,10 @@ export async function POST(request: Request) {
     .single()
 
   if (orgError || !org) {
-    return NextResponse.json({ message: "テナント作成に失敗しました。" }, { status: 500 })
+    return NextResponse.json(
+      { message: orgError?.message ?? "テナント作成に失敗しました。" },
+      { status: 500 }
+    )
   }
 
   const { error: memberError } = await supabase
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
 
   if (memberError) {
     return NextResponse.json(
-      { message: "管理者登録に失敗しました。" },
+      { message: memberError.message ?? "管理者登録に失敗しました。" },
       { status: 500 }
     )
   }
