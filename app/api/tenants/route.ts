@@ -37,8 +37,14 @@ export async function POST(request: Request) {
     .single()
 
   if (orgError || !org) {
+    console.error("org insert error", orgError)
     return NextResponse.json(
-      { message: orgError?.message ?? "テナント作成に失敗しました。" },
+      {
+        message: orgError?.message ?? "テナント作成に失敗しました。",
+        code: orgError?.code ?? null,
+        details: orgError?.details ?? null,
+        hint: orgError?.hint ?? null,
+      },
       { status: 500 }
     )
   }
@@ -52,8 +58,14 @@ export async function POST(request: Request) {
     })
 
   if (memberError) {
+    console.error("member insert error", memberError)
     return NextResponse.json(
-      { message: memberError.message ?? "管理者登録に失敗しました。" },
+      {
+        message: memberError.message ?? "管理者登録に失敗しました。",
+        code: memberError.code ?? null,
+        details: memberError.details ?? null,
+        hint: memberError.hint ?? null,
+      },
       { status: 500 }
     )
   }
