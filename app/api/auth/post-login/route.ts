@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 type MembershipRow = {
   role: "admin" | "student"
-  organization?: { slug: string | null }
+  organization?: { slug: string | null }[]
 }
 
 export async function POST() {
@@ -22,19 +22,19 @@ export async function POST() {
 
   const rows = (memberships ?? []) as MembershipRow[]
   const adminMembership = rows.find(
-    (row) => row.role === "admin" && row.organization?.slug
+    (row) => row.role === "admin" && row.organization?.[0]?.slug
   )
 
-  if (adminMembership?.organization?.slug) {
+  if (adminMembership?.organization?.[0]?.slug) {
     return NextResponse.json({
-      redirectTo: `/${adminMembership.organization.slug}/admin/problems/new`,
+      redirectTo: `/${adminMembership.organization[0].slug}/admin/problems/new`,
     })
   }
 
-  const firstMembership = rows.find((row) => row.organization?.slug)
-  if (firstMembership?.organization?.slug) {
+  const firstMembership = rows.find((row) => row.organization?.[0]?.slug)
+  if (firstMembership?.organization?.[0]?.slug) {
     return NextResponse.json({
-      redirectTo: `/${firstMembership.organization.slug}`,
+      redirectTo: `/${firstMembership.organization[0].slug}`,
     })
   }
 
