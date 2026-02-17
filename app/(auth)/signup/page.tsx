@@ -33,6 +33,16 @@ export default function SignupPage() {
         throw new Error(payload.message ?? "登録に失敗しました。")
       }
 
+      const redirectResponse = await fetch("/api/auth/post-login", {
+        method: "POST",
+      })
+
+      if (redirectResponse.ok) {
+        const payload = (await redirectResponse.json()) as { redirectTo?: string }
+        window.location.href = payload.redirectTo ?? "/tenants/new"
+        return
+      }
+
       window.location.href = "/tenants/new"
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")

@@ -82,6 +82,8 @@ create or replace function public.is_org_member(org_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select exists (
     select 1
@@ -95,6 +97,8 @@ create or replace function public.is_org_admin(org_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select exists (
     select 1
@@ -116,6 +120,10 @@ alter table public.problem_attempts enable row level security;
 create policy "org members can read orgs"
 on public.organizations for select
 using (public.is_org_member(id));
+
+create policy "org creators can read orgs"
+on public.organizations for select
+using (created_by = auth.uid());
 
 create policy "authenticated can create orgs"
 on public.organizations for insert
