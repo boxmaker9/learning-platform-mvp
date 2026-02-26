@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 
 export default function InviteForm({ tenant }: { tenant: string }) {
+  const formRef = useRef<HTMLFormElement>(null)
   const [role, setRole] = useState("student")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -40,8 +41,8 @@ export default function InviteForm({ tenant }: { tenant: string }) {
         throw new Error(payload.message ?? "招待に失敗しました。")
       }
 
-      setSuccess("招待を作成しました。")
-      event.currentTarget.reset()
+      setSuccess("招待を作成しました。メール送信はまだ未対応です。")
+      formRef.current?.reset()
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {
@@ -50,7 +51,12 @@ export default function InviteForm({ tenant }: { tenant: string }) {
   }
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit} aria-busy={isSubmitting}>
+    <form
+      ref={formRef}
+      className="space-y-4"
+      onSubmit={onSubmit}
+      aria-busy={isSubmitting}
+    >
       <div className="space-y-2">
         <Label htmlFor="email">招待メール</Label>
         <Input id="email" name="email" type="email" required placeholder="member@example.com" />
@@ -77,6 +83,11 @@ export default function InviteForm({ tenant }: { tenant: string }) {
           {success}
         </p>
       ) : null}
+      <p className="text-xs text-slate-500">
+        招待メール送信は未実装です。受講者は
+        <span className="font-medium"> /tenants/invitations </span>
+        で受諾できます。
+      </p>
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "送信中..." : "招待を作成"}
       </Button>
