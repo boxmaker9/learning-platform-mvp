@@ -38,6 +38,20 @@ export async function POST() {
     })
   }
 
+  const { data: ownedOrg } = await supabase
+    .from("organizations")
+    .select("slug")
+    .eq("created_by", userData.user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (ownedOrg?.slug) {
+    return NextResponse.json({
+      redirectTo: `/${ownedOrg.slug}/admin/problems/new`,
+    })
+  }
+
   return NextResponse.json({ redirectTo: "/tenants/new" })
 }
 
