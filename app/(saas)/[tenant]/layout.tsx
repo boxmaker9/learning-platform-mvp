@@ -27,6 +27,21 @@ export default async function TenantLayout({
   const { data: userData } = await supabase.auth.getUser()
   const email = userData.user?.email ?? null
 
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", params.tenant)
+    .single()
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organization?.id ?? "")
+    .eq("user_id", userData.user?.id ?? "")
+    .single()
+
+  const isAdmin = membership?.role === "admin"
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900">
       <header className="border-b border-slate-200 bg-white">
@@ -52,22 +67,26 @@ export default async function TenantLayout({
               </p>
               <p className="text-sm font-semibold">{params.tenant}</p>
             </div>
-            <nav className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500">管理者</p>
-              {adminItems.map((item) => (
-                <Button
-                  key={item.href}
-                  asChild
-                  variant="ghost"
-                  className="w-full justify-start"
-                >
-                  <Link href={`/${params.tenant}/${item.href}`}>
-                    {item.label}
-                  </Link>
-                </Button>
-              ))}
-            </nav>
-            <div className="my-4 border-t border-slate-200" />
+            {isAdmin ? (
+              <>
+                <nav className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-500">管理者</p>
+                  {adminItems.map((item) => (
+                    <Button
+                      key={item.href}
+                      asChild
+                      variant="ghost"
+                      className="w-full justify-start"
+                    >
+                      <Link href={`/${params.tenant}/${item.href}`}>
+                        {item.label}
+                      </Link>
+                    </Button>
+                  ))}
+                </nav>
+                <div className="my-4 border-t border-slate-200" />
+              </>
+            ) : null}
             <nav className="space-y-2">
               <p className="text-xs font-semibold text-slate-500">学習者</p>
               {studentItems.map((item) => (
