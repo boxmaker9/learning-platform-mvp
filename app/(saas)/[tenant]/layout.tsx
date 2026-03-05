@@ -6,10 +6,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import LogoutButton from "./admin/LogoutButton"
 
-const navItems = [
+const adminItems = [
   { label: "問題一覧", href: "admin/problems" },
   { label: "問題作成", href: "admin/problems/new" },
   { label: "招待管理", href: "admin/invitations" },
+]
+
+const studentItems = [
+  { label: "問題を解く", href: "problems" },
 ]
 
 export default async function TenantLayout({
@@ -49,7 +53,8 @@ export default async function TenantLayout({
               <p className="text-sm font-semibold">{params.tenant}</p>
             </div>
             <nav className="space-y-2">
-              {navItems.map((item) => (
+              <p className="text-xs font-semibold text-slate-500">管理者</p>
+              {adminItems.map((item) => (
                 <Button
                   key={item.href}
                   asChild
@@ -64,6 +69,19 @@ export default async function TenantLayout({
             </nav>
             <div className="my-4 border-t border-slate-200" />
             <nav className="space-y-2">
+              <p className="text-xs font-semibold text-slate-500">学習者</p>
+              {studentItems.map((item) => (
+                <Button
+                  key={item.href}
+                  asChild
+                  variant="ghost"
+                  className="w-full justify-start"
+                >
+                  <Link href={`/${params.tenant}/${item.href}`}>
+                    {item.label}
+                  </Link>
+                </Button>
+              ))}
               <Button asChild variant="ghost" className="w-full justify-start">
                 <Link href={`/${params.tenant}`}>受講者トップ</Link>
               </Button>
