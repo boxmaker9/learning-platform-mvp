@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import LogoutButton from "./admin/LogoutButton"
 
@@ -11,13 +12,17 @@ const navItems = [
   { label: "招待管理", href: "admin/invitations" },
 ]
 
-export default function TenantLayout({
+export default async function TenantLayout({
   children,
   params,
 }: {
   children: ReactNode
   params: { tenant: string }
 }) {
+  const supabase = createSupabaseServerClient()
+  const { data: userData } = await supabase.auth.getUser()
+  const email = userData.user?.email ?? null
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900">
       <header className="border-b border-slate-200 bg-white">
@@ -28,9 +33,10 @@ export default function TenantLayout({
             </p>
             <p className="text-lg font-semibold">{params.tenant}</p>
           </div>
-          <nav className="text-sm text-slate-500">
-            <span>Learning Platform MVP</span>
-          </nav>
+          <div className="text-right text-xs text-slate-500">
+            {email ? <p>{email}</p> : null}
+            <p>Learning Platform MVP</p>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">
