@@ -21,6 +21,11 @@ export async function POST() {
     .eq("user_id", userData.user.id)
 
   const rows = (memberships ?? []) as MembershipRow[]
+  const preferredSlug = process.env.DEFAULT_TENANT_SLUG?.trim().toLowerCase()
+  const preferredMembership = preferredSlug
+    ? rows.find((row) => row.organization?.[0]?.slug === preferredSlug)
+    : undefined
+
   const adminMembership = rows.find(
     (row) => row.role === "admin" && row.organization?.[0]?.slug
   )
@@ -31,7 +36,8 @@ export async function POST() {
     })
   }
 
-  const firstMembership = rows.find((row) => row.organization?.[0]?.slug)
+  const firstMembership =
+    preferredMembership ?? rows.find((row) => row.organization?.[0]?.slug)
   if (firstMembership?.organization?.[0]?.slug) {
     return NextResponse.json({
       redirectTo: `/${firstMembership.organization[0].slug}`,
