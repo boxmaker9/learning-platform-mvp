@@ -65,6 +65,33 @@ export async function POST(
     return NextResponse.json({ message: "招待の作成に失敗しました。" }, { status: 500 })
   }
 
+  const resendApiKey = process.env.RESEND_API_KEY
+  const fromEmail = process.env.INVITE_FROM_EMAIL
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (resendApiKey && fromEmail && baseUrl) {
+    const { Resend } = await import("resend")
+    const resend = new Resend(resendApiKey)
+    const inviteUrl = `${baseUrl}/tenants/invitations`
+
+    const { error: emailError } = await resend.emails.send({
+      from: fromEmail,
+      to: parsed.data.email,
+      subject: "招待が届きました",
+      html: `
+        <p>学習プラットフォームの招待が届きました。</p>
+        <p>以下のURLからログインして招待を受諾してください。</p>
+        <p><a href="${inviteUrl}">${inviteUrl}</a></p>
+      `,
+    })
+
+    if (emailError) {
+      return NextResponse.json(
+        { message: "招待メール送信に失敗しました。" },
+        { status: 500 }
+      )
+    }
+  }
+
   return NextResponse.json({ id: invite.id })
 }
 
