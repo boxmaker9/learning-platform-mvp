@@ -26,6 +26,12 @@ export async function POST() {
     ? rows.find((row) => row.organization?.[0]?.slug === preferredSlug)
     : undefined
 
+  if (preferredMembership?.organization?.[0]?.slug) {
+    return NextResponse.json({
+      redirectTo: `/${preferredMembership.organization[0].slug}`,
+    })
+  }
+
   const adminMembership = rows.find(
     (row) => row.role === "admin" && row.organization?.[0]?.slug
   )
@@ -36,8 +42,7 @@ export async function POST() {
     })
   }
 
-  const firstMembership =
-    preferredMembership ?? rows.find((row) => row.organization?.[0]?.slug)
+  const firstMembership = rows.find((row) => row.organization?.[0]?.slug)
   if (firstMembership?.organization?.[0]?.slug) {
     return NextResponse.json({
       redirectTo: `/${firstMembership.organization[0].slug}`,
