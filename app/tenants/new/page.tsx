@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,30 @@ import { Label } from "@/components/ui/label"
 export default function TenantCreatePage() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      try {
+        const response = await fetch("/api/auth/post-login", { method: "POST" })
+        if (!response.ok) return
+        const payload = (await response.json()) as { redirectTo?: string }
+        if (cancelled) return
+        const redirectTo = payload.redirectTo
+        if (redirectTo && redirectTo !== "/tenants/new" && redirectTo !== "/login") {
+          window.location.replace(redirectTo)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

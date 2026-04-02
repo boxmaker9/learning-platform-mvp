@@ -3,8 +3,8 @@ import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 type MembershipRow = {
+  organization_id: string
   role: "admin" | "student"
-  organization?: { slug: string | null }[]
 }
 
 export async function POST() {
@@ -17,36 +17,39 @@ export async function POST() {
 
   const { data: memberships } = await supabase
     .from("organization_members")
-    .select("role, organization:organizations(slug)")
+    .select("organization_id, role")
     .eq("user_id", userData.user.id)
 
   const rows = (memberships ?? []) as MembershipRow[]
-  const preferredSlug = process.env.DEFAULT_TENANT_SLUG?.trim().toLowerCase()
-  const preferredMembership = preferredSlug
-    ? rows.find((row) => row.organization?.[0]?.slug === preferredSlug)
-    : undefined
 
-  if (preferredMembership?.organization?.[0]?.slug) {
-    return NextResponse.json({
-      redirectTo: `/${preferredMembership.organization[0].slug}`,
-    })
-  }
-
-  const adminMembership = rows.find(
-    (row) => row.role === "admin" && row.organization?.[0]?.slug
+  const orgIds = Array.from(
+    new Set(rows.map((row) => row.organization_id).filter(Boolean))
   )
 
-  if (adminMembership?.organization?.[0]?.slug) {
-    return NextResponse.json({
-      redirectTo: `/${adminMembership.organization[0].slug}/admin/problems/new`,
-    })
-  }
+  if (orgIds.length > 0) {
+    const { data: organizations } = await supabase
+      .from("organizations")
+      .select("id, slug")
+      .in("id", orgIds)
 
-  const firstMembership = rows.find((row) => row.organization?.[0]?.slug)
-  if (firstMembership?.organization?.[0]?.slug) {
-    return NextResponse.json({
-      redirectTo: `/${firstMembership.organization[0].slug}`,
-    })
+    const slugById = new Map(
+      (organizations ?? [])
+        .filter((org) => typeof org.slug === "string" && org.slug.length > 0)
+        .map((org) => [String(org.id), String(org.slug)])
+    )
+
+    const adminOrgId = rows.find((row) => row.role === "admin")?.organization_id
+    const adminSlug = adminOrgId ? slugById.get(adminOrgId) : undefined
+    if (adminSlug) {
+      return NextResponse.json({
+        redirectTo: `/${adminSlug}/admin/problems/new`,
+      })
+    }
+
+    const firstSlug = rows.map((row) => slugById.get(row.organization_id)).find(Boolean)
+    if (firstSlug) {
+      return NextResponse.json({ redirectTo: `/${firstSlug}` })
+    }
   }
 
   const { data: ownedOrg } = await supabase

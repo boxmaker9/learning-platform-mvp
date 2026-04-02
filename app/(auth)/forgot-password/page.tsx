@@ -8,42 +8,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
+    setSuccess(null)
     setIsSubmitting(true)
 
     const formData = new FormData(event.currentTarget)
     const email = String(formData.get("email") ?? "")
-    const password = String(formData.get("password") ?? "")
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/reset-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       })
 
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string }
-        throw new Error(payload.message ?? "ログインに失敗しました。")
+        throw new Error(payload.message ?? "送信に失敗しました。")
       }
 
-      const redirectResponse = await fetch("/api/auth/post-login", {
-        method: "POST",
-      })
-
-      if (redirectResponse.ok) {
-        const payload = (await redirectResponse.json()) as { redirectTo?: string }
-        window.location.href = payload.redirectTo ?? "/tenants/new"
-        return
-      }
-
-      window.location.href = "/tenants/new"
+      setSuccess("再設定メールを送信しました。受信箱をご確認ください。")
+      event.currentTarget.reset()
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {
@@ -54,8 +46,8 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ログイン</CardTitle>
-        <CardDescription>管理画面にアクセスします。</CardDescription>
+        <CardTitle>パスワード再設定</CardTitle>
+        <CardDescription>登録したメールアドレスに再設定リンクを送信します。</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={onSubmit} aria-busy={isSubmitting}>
@@ -63,35 +55,24 @@ export default function LoginPage() {
             <Label htmlFor="email">メールアドレス</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">パスワード</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
           {error ? (
             <p className="text-sm text-red-600" role="alert">
               {error}
             </p>
           ) : null}
+          {success ? (
+            <p className="text-sm text-emerald-600" role="status">
+              {success}
+            </p>
+          ) : null}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "ログイン中..." : "ログイン"}
+            {isSubmitting ? "送信中..." : "再設定メールを送信"}
           </Button>
         </form>
         <p className="mt-4 text-sm text-slate-500">
-          アカウントがない場合は{" "}
-          <Link className="font-medium text-primary-600 hover:underline" href="/signup">
-            新規登録
-          </Link>
-        </p>
-        <p className="mt-2 text-sm text-slate-500">
-          パスワードを忘れた場合は{" "}
-          <Link className="font-medium text-primary-600 hover:underline" href="/forgot-password">
-            再設定
+          ログイン画面へ戻る場合は{" "}
+          <Link className="font-medium text-primary-600 hover:underline" href="/login">
+            こちら
           </Link>
         </p>
       </CardContent>
