@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
+import DeleteProblemButton from "./DeleteProblemButton"
+
 const typeLabels: Record<string, string> = {
   single_choice: "択一式",
   multiple_choice: "複数選択",
@@ -178,9 +180,10 @@ export default async function AdminProblemsPage({
           {problems && problems.length > 0 ? (
             <div className="space-y-3">
               {problems.map((problem) => (
-                <div
+                <Link
                   key={problem.id}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
+                  href={`/${params.tenant}/admin/problems/${problem.id}`}
+                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <p className="font-medium">{problem.title}</p>
@@ -190,8 +193,9 @@ export default async function AdminProblemsPage({
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>作成日: {formatDate(problem.created_at)}</span>
+                    <DeleteProblemButton tenant={params.tenant} problemId={problem.id} />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
