@@ -6,7 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 const attemptSchema = z.object({
   type: z.enum(["single_choice", "multiple_choice", "text"]),
   answerText: z.string().optional(),
-  selectedOptionId: z.string().uuid().optional(),
+  // フォームは single/multiple どちらでも selectedOptionId を送る（未選択は ""）ので空文字を許容する
+  selectedOptionId: z.union([z.string().uuid(), z.literal("")]).optional(),
   selectedOptionIds: z.array(z.string().uuid()).optional(),
 })
 
