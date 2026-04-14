@@ -75,7 +75,14 @@ export async function POST(
         .single()
 
       if (groupError || !createdGroup) {
-        return NextResponse.json({ message: "大問の作成に失敗しました。" }, { status: 500 })
+        return NextResponse.json(
+          {
+            message: "大問の作成に失敗しました。",
+            detail: groupError?.message ?? null,
+            hint: "SupabaseのDBに problem_groups テーブルとRLSポリシーが反映されているか確認してください。",
+          },
+          { status: 500 }
+        )
       }
 
       problemGroupId = createdGroup.id
@@ -112,7 +119,14 @@ export async function POST(
     .single()
 
   if (problemError || !createdProblem) {
-    return NextResponse.json({ message: "問題の作成に失敗しました。" }, { status: 500 })
+    return NextResponse.json(
+      {
+        message: "問題の作成に失敗しました。",
+        detail: problemError?.message ?? null,
+        hint: "SupabaseのDBに problems.problem_group_id / problems.position が反映されているか確認してください。",
+      },
+      { status: 500 }
+    )
   }
 
   if (parsed.data.type !== "text") {

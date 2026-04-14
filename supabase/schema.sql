@@ -4,19 +4,19 @@ create type public.organization_role as enum ('admin', 'student');
 create type public.problem_type as enum ('single_choice', 'multiple_choice', 'text');
 create type public.invitation_status as enum ('pending', 'accepted', 'revoked');
 
+create table public.organizations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null unique,
+  created_by uuid not null references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
 create table public.problem_groups (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   title text not null,
   position integer not null default 0,
-  created_by uuid not null references auth.users(id),
-  created_at timestamptz not null default now()
-);
-
-create table public.organizations (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text not null unique,
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now()
 );
