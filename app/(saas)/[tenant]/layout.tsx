@@ -9,6 +9,7 @@ import LogoutButton from "./admin/LogoutButton"
 const adminItems = [
   { label: "問題一覧", href: "admin/problems" },
   { label: "問題作成", href: "admin/problems/new" },
+  { label: "大問管理", href: "admin/groups" },
   { label: "招待管理", href: "admin/invitations" },
 ]
 
