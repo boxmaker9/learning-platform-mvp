@@ -36,6 +36,7 @@ export default function ProblemAttemptForm({
 }: ProblemAttemptFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [resultLabel, setResultLabel] = useState<"correct" | "incorrect" | "pending" | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { register, handleSubmit, setValue, watch } = useForm<AttemptFormValues>({
@@ -51,6 +52,7 @@ export default function ProblemAttemptForm({
   const onSubmit = handleSubmit(async (values) => {
     setError(null)
     setSuccess(null)
+    setResultLabel(null)
     setIsSubmitting(true)
 
     const payload = {
@@ -77,7 +79,19 @@ export default function ProblemAttemptForm({
         throw new Error(data.message ?? "送信に失敗しました。")
       }
 
+      const data = (await response.json()) as {
+        success?: boolean
+        isCorrect: boolean | null
+      }
+
       setSuccess("回答を送信しました。")
+      if (data.isCorrect === true) {
+        setResultLabel("correct")
+      } else if (data.isCorrect === false) {
+        setResultLabel("incorrect")
+      } else {
+        setResultLabel("pending")
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {
@@ -137,9 +151,24 @@ export default function ProblemAttemptForm({
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-emerald-600" role="status">
-          {success}
-        </p>
+        <div className="space-y-2" role="status">
+          <p className="text-sm text-emerald-600">{success}</p>
+          {resultLabel === "correct" ? (
+            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+              正解です
+            </p>
+          ) : null}
+          {resultLabel === "incorrect" ? (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
+              不正解です
+            </p>
+          ) : null}
+          {resultLabel === "pending" ? (
+            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              記述問題のため、この場では正誤を表示できません。
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <Button type="submit" disabled={isSubmitting}>
