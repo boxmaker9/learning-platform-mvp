@@ -84,6 +84,7 @@ export default async function AdminProblemsPage({
     .from("problems")
     .select("id,title,type,created_at")
     .eq("organization_id", organization.id)
+    .is("problem_group_id", null)
     .order("created_at", { ascending: false })
 
   const { data: groups } = await supabase
@@ -147,7 +148,12 @@ export default async function AdminProblemsPage({
                   className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <p className="min-w-0 truncate font-medium">{group.title}</p>
+                    <Link
+                      className="min-w-0 truncate font-medium hover:underline"
+                      href={`/${params.tenant}/admin/groups/${group.id}`}
+                    >
+                      {group.title}
+                    </Link>
                     <div className="flex items-center gap-3">
                       <span className="shrink-0 text-xs text-slate-500">
                         全{groupCountById.get(group.id) ?? 0}問
