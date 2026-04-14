@@ -83,6 +83,31 @@ export default async function AdminProblemsPage({
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false })
 
+  const { data: groups } = await supabase
+    .from("problem_groups")
+    .select("id,title,created_at")
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: false })
+
+  const groupIds = (groups ?? []).map((g) => g.id)
+  const { data: groupedProblems } =
+    groupIds.length > 0
+      ? await supabase
+          .from("problems")
+          .select("problem_group_id")
+          .eq("organization_id", organization.id)
+          .in("problem_group_id", groupIds)
+      : { data: [] as { problem_group_id: string | null }[] }
+
+  const groupCountById = new Map<string, number>()
+  ;(groupedProblems ?? []).forEach((row) => {
+    if (!row.problem_group_id) return
+    groupCountById.set(
+      row.problem_group_id,
+      (groupCountById.get(row.problem_group_id) ?? 0) + 1
+    )
+  })
+
   return (
     <div className="space-y-6">
       <Card>
@@ -94,16 +119,60 @@ export default async function AdminProblemsPage({
           <p className="text-sm text-slate-500">
             問題の作成・編集は管理者のみ可能です。
           </p>
-          <Button asChild>
-            <Link href={`/${params.tenant}/admin/problems/new`}>新規作成</Link>
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button asChild variant="secondary">
+              <Link href={`/${params.tenant}/admin/groups/new`}>大問を作成</Link>
+            </Button>
+            <Button asChild>
+              <Link href={`/${params.tenant}/admin/problems/new`}>小問を作成</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>登録済み問題</CardTitle>
-          <CardDescription>最新の問題から表示されます。</CardDescription>
+          <CardTitle>大問一覧</CardTitle>
+          <CardDescription>大問（問題セット）を確認できます。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {groups && groups.length > 0 ? (
+            <div className="space-y-3">
+              {groups.map((group) => (
+                <div
+                  key={group.id}
+                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="min-w-0 truncate font-medium">{group.title}</p>
+                    <span className="shrink-0 text-xs text-slate-500">
+                      全{groupCountById.get(group.id) ?? 0}問
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>作成日: {formatDate(group.created_at)}</span>
+                    <Link
+                      className="font-medium text-primary-600 hover:underline"
+                      href={`/${params.tenant}/admin/groups/${group.id}/problems/new`}
+                    >
+                      小問を追加
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+              まだ大問がありません。右上の「大問を作成」から追加してください。
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>小問一覧</CardTitle>
+          <CardDescription>最新の小問から表示されます。</CardDescription>
         </CardHeader>
         <CardContent>
           {problems && problems.length > 0 ? (
@@ -127,7 +196,7 @@ export default async function AdminProblemsPage({
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
-              まだ問題がありません。右上の「新規作成」から追加してください。
+              まだ小問がありません。右上の「小問を作成」から追加してください。
             </div>
           )}
         </CardContent>
