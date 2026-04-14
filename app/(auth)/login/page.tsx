@@ -18,14 +18,15 @@ export default function LoginPage() {
     setIsSubmitting(true)
 
     const formData = new FormData(event.currentTarget)
-    const email = String(formData.get("email") ?? "")
+    const tenant = String(formData.get("tenant") ?? "")
+    const identifier = String(formData.get("identifier") ?? "")
     const password = String(formData.get("password") ?? "")
 
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ tenant, identifier, password }),
       })
 
       if (!response.ok) {
@@ -60,8 +61,12 @@ export default function LoginPage() {
       <CardContent>
         <form className="space-y-4" onSubmit={onSubmit} aria-busy={isSubmitting}>
           <div className="space-y-2">
-            <Label htmlFor="email">メールアドレス</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required />
+            <Label htmlFor="tenant">テナント</Label>
+            <Input id="tenant" name="tenant" required placeholder="例: fth" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="identifier">ログインID / メール</Label>
+            <Input id="identifier" name="identifier" autoComplete="username" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>

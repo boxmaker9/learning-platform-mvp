@@ -10,6 +10,7 @@ const adminItems = [
   { label: "問題管理", href: "admin/problems" },
   { label: "大問作成", href: "admin/groups/new" },
   { label: "小問作成", href: "admin/problems/new" },
+  { label: "受講者作成", href: "admin/users/new" },
 ]
 
 const studentItems = [

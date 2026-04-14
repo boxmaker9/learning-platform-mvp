@@ -30,6 +30,17 @@ create table public.organization_members (
   unique (organization_id, user_id)
 );
 
+create table public.user_profiles (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  login_id text not null,
+  display_name text,
+  created_at timestamptz not null default now(),
+  unique (organization_id, login_id),
+  unique (organization_id, user_id)
+);
+
 create table public.organization_invitations (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -122,6 +133,7 @@ $$;
 
 alter table public.organizations enable row level security;
 alter table public.organization_members enable row level security;
+alter table public.user_profiles enable row level security;
 alter table public.organization_invitations enable row level security;
 alter table public.courses enable row level security;
 alter table public.problem_groups enable row level security;
@@ -155,6 +167,15 @@ using (public.is_org_member(organization_id) or user_id = auth.uid());
 
 create policy "admins manage memberships"
 on public.organization_members for all
+using (public.is_org_admin(organization_id))
+with check (public.is_org_admin(organization_id));
+
+create policy "members can read own profile"
+on public.user_profiles for select
+using (user_id = auth.uid());
+
+create policy "admins manage profiles"
+on public.user_profiles for all
 using (public.is_org_admin(organization_id))
 with check (public.is_org_admin(organization_id));
 
