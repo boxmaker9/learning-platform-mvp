@@ -16,6 +16,7 @@ export type GroupProblem = {
   id: string
   title: string
   prompt: string | null
+  explanation: string | null
   type: "single_choice" | "multiple_choice" | "text"
   options: ProblemOption[]
 }
@@ -90,6 +91,7 @@ export default function GroupAttemptRunner({
             problemId={current.id}
             type={current.type}
             options={current.options}
+            explanation={current.explanation}
             onSubmitted={(result) => {
               setLastResult(result.isCorrect)
               setTimeout(() => {

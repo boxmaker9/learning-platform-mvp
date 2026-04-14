@@ -60,7 +60,7 @@ export default async function ProblemAttemptPage({
 
   const { data: problem } = await supabase
     .from("problems")
-    .select("id,title,prompt,type")
+    .select("id,title,prompt,type,explanation")
     .eq("organization_id", organization.id)
     .eq("id", params.problemId)
     .single()
@@ -118,6 +118,7 @@ export default async function ProblemAttemptPage({
             problemId={problem.id}
             type={problem.type}
             options={(options ?? []) as ProblemOption[]}
+            explanation={problem.explanation ?? null}
           />
         </CardContent>
       </Card>

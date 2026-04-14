@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import DeleteProblemButton from "./DeleteProblemButton"
+import DeleteGroupButton from "./DeleteGroupButton"
 
 const typeLabels: Record<string, string> = {
   single_choice: "択一式",
@@ -147,9 +148,12 @@ export default async function AdminProblemsPage({
                 >
                   <div className="flex items-center justify-between gap-4">
                     <p className="min-w-0 truncate font-medium">{group.title}</p>
-                    <span className="shrink-0 text-xs text-slate-500">
-                      全{groupCountById.get(group.id) ?? 0}問
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="shrink-0 text-xs text-slate-500">
+                        全{groupCountById.get(group.id) ?? 0}問
+                      </span>
+                      <DeleteGroupButton tenant={params.tenant} groupId={group.id} />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>作成日: {formatDate(group.created_at)}</span>

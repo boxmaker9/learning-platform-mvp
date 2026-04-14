@@ -73,7 +73,7 @@ export default async function GroupAttemptPage({
 
   const { data: problems } = await supabase
     .from("problems")
-    .select("id,title,prompt,type,position")
+    .select("id,title,prompt,type,position,explanation")
     .eq("organization_id", organization.id)
     .eq("problem_group_id", group.id)
     .order("position", { ascending: true })
@@ -101,6 +101,7 @@ export default async function GroupAttemptPage({
     id: p.id,
     title: p.title,
     prompt: p.prompt ?? null,
+    explanation: p.explanation ?? null,
     type: p.type,
     options: (optionsByProblem.get(p.id) ?? []).map((o) => ({
       id: o.id,

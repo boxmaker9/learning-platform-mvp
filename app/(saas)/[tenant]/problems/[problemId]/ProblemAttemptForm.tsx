@@ -20,6 +20,7 @@ type ProblemAttemptFormProps = {
   problemId: string
   type: "single_choice" | "multiple_choice" | "text"
   options: ProblemOption[]
+  explanation?: string | null
   onSubmitted?: (result: { isCorrect: boolean | null }) => void
 }
 
@@ -34,6 +35,7 @@ export default function ProblemAttemptForm({
   problemId,
   type,
   options,
+  explanation,
   onSubmitted,
 }: ProblemAttemptFormProps) {
   const [error, setError] = useState<string | null>(null)
@@ -171,6 +173,12 @@ export default function ProblemAttemptForm({
             <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
               記述問題のため、この場では正誤を表示できません。
             </p>
+          ) : null}
+          {explanation ? (
+            <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <p className="mb-1 text-xs font-semibold text-slate-500">解説</p>
+              <p className="whitespace-pre-wrap">{explanation}</p>
+            </div>
           ) : null}
         </div>
       ) : null}
