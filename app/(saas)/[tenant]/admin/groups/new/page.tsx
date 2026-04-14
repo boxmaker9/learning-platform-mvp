@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ export default function AdminGroupCreatePage() {
         ? params.tenant[0]
         : ""
 
+  const formRef = useRef<HTMLFormElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,7 +79,7 @@ export default function AdminGroupCreatePage() {
 
       const payload = (await response.json()) as { id: string }
       setSuccess("大問を作成しました。続けて小問を作成できます。")
-      ;(event.currentTarget as HTMLFormElement).reset()
+      formRef.current?.reset()
       setSelectedGroupId(payload.id)
       setSelectedGroupTitle(title)
 
@@ -100,7 +101,12 @@ export default function AdminGroupCreatePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form className="space-y-4" onSubmit={onSubmit} aria-busy={isSubmitting}>
+          <form
+            ref={formRef}
+            className="space-y-4"
+            onSubmit={onSubmit}
+            aria-busy={isSubmitting}
+          >
             <div className="space-y-2">
               <Label htmlFor="title">大問タイトル</Label>
               <Input
