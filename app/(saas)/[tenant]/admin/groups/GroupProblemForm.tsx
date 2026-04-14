@@ -46,6 +46,9 @@ export default function GroupProblemForm({
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [queue, setQueue] = useState<ProblemFormValues[]>([])
+  const [queueError, setQueueError] = useState<string | null>(null)
+  const [isQueueSaving, setIsQueueSaving] = useState(false)
 
   const defaultValues = useMemo(
     () => ({
@@ -61,6 +64,8 @@ export default function GroupProblemForm({
     handleSubmit,
     reset,
     setValue,
+    getValues,
+    trigger,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ProblemFormValues>({
@@ -120,7 +125,7 @@ export default function GroupProblemForm({
     }, 0)
   }
 
-  const onSubmit = handleSubmit(async (values) => {
+  const saveOne = async (values: ProblemFormValues) => {
     setSubmitError(null)
     setSubmitSuccess(false)
 
@@ -141,7 +146,42 @@ export default function GroupProblemForm({
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "通信エラーが発生しました。")
     }
-  })
+  }
+
+  const onSubmit = handleSubmit(saveOne)
+
+  const addToQueue = async () => {
+    setQueueError(null)
+    setSubmitSuccess(false)
+    const ok = await trigger()
+    if (!ok) {
+      setQueueError("入力内容を確認してください。")
+      return
+    }
+    const values = getValues()
+    setQueue((prev) => [...prev, values])
+    reset(defaultValues)
+  }
+
+  const saveQueue = async () => {
+    if (queue.length === 0) return
+    setQueueError(null)
+    setSubmitError(null)
+    setSubmitSuccess(false)
+    setIsQueueSaving(true)
+    try {
+      for (const values of queue) {
+        // eslint-disable-next-line no-await-in-loop
+        await saveOne(values)
+      }
+      setQueue([])
+      setSubmitSuccess(true)
+    } catch (e) {
+      setQueueError(e instanceof Error ? e.message : "保存に失敗しました。")
+    } finally {
+      setIsQueueSaving(false)
+    }
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -361,14 +401,73 @@ export default function GroupProblemForm({
                     {submitError}
                   </span>
                 ) : null}
+                {queueError ? (
+                  <span className="text-red-600" role="alert">
+                    {queueError}
+                  </span>
+                ) : null}
               </div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "保存中..." : "小問を保存"}
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={addToQueue}
+                  disabled={isSubmitting || isQueueSaving}
+                >
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  小問を追加
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={saveQueue}
+                  disabled={queue.length === 0 || isSubmitting || isQueueSaving}
+                >
+                  {isQueueSaving ? "保存中..." : `まとめて保存 (${queue.length})`}
+                </Button>
+                <Button type="submit" disabled={isSubmitting || isQueueSaving}>
+                  {isSubmitting ? "保存中..." : "この小問を保存"}
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {queue.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>追加予定の小問</CardTitle>
+            <CardDescription>「まとめて保存」で一括作成できます。</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {queue.map((q, idx) => (
+                <div
+                  key={`${q.title}-${idx}`}
+                  className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{q.title}</p>
+                    <p className="text-xs text-slate-500">{typeLabels[q.type]}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="shrink-0 text-red-600 hover:text-red-700"
+                    onClick={() =>
+                      setQueue((prev) => prev.filter((_, pIdx) => pIdx !== idx))
+                    }
+                    aria-label="小問を削除"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="h-fit">
         <CardHeader>
