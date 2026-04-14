@@ -20,6 +20,7 @@ type ProblemAttemptFormProps = {
   problemId: string
   type: "single_choice" | "multiple_choice" | "text"
   options: ProblemOption[]
+  onSubmitted?: (result: { isCorrect: boolean | null }) => void
 }
 
 type AttemptFormValues = {
@@ -33,6 +34,7 @@ export default function ProblemAttemptForm({
   problemId,
   type,
   options,
+  onSubmitted,
 }: ProblemAttemptFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -92,6 +94,8 @@ export default function ProblemAttemptForm({
       } else {
         setResultLabel("pending")
       }
+
+      onSubmitted?.({ isCorrect: data.isCorrect })
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {

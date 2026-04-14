@@ -7,6 +7,8 @@ export const problemOptionSchema = z.object({
 
 export const problemSchema = z
   .object({
+    groupTitle: z.string().optional(),
+    groupId: z.string().uuid().optional(),
     title: z.string().min(1, "タイトルは必須です。"),
     prompt: z.string().min(1, "問題文は必須です。"),
     type: z.enum(["single_choice", "multiple_choice", "text"]),

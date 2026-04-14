@@ -63,6 +63,8 @@ export const problems = pgTable("problems", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull(),
   courseId: uuid("course_id"),
+  problemGroupId: uuid("problem_group_id"),
+  position: integer("position").notNull().default(0),
   title: text("title").notNull(),
   prompt: text("prompt"),
   type: problemType("type").notNull(),
@@ -71,6 +73,15 @@ export const problems = pgTable("problems", {
   createdBy: uuid("created_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const problemGroups = pgTable("problem_groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull(),
+  title: text("title").notNull(),
+  position: integer("position").notNull().default(0),
+  createdBy: uuid("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
 export const problemOptions = pgTable("problem_options", {

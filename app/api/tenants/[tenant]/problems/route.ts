@@ -45,10 +45,62 @@ export async function POST(
     return NextResponse.json({ message: "権限がありません。" }, { status: 403 })
   }
 
+  const groupTitle =
+    typeof parsed.data.groupTitle === "string" ? parsed.data.groupTitle.trim() : ""
+
+  let problemGroupId: string | null =
+    typeof parsed.data.groupId === "string" ? parsed.data.groupId : null
+
+  if (!problemGroupId && groupTitle.length > 0) {
+    const { data: existingGroup } = await supabase
+      .from("problem_groups")
+      .select("id")
+      .eq("organization_id", organization.id)
+      .eq("title", groupTitle)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (existingGroup?.id) {
+      problemGroupId = existingGroup.id
+    } else {
+      const { data: createdGroup, error: groupError } = await supabase
+        .from("problem_groups")
+        .insert({
+          organization_id: organization.id,
+          title: groupTitle,
+          created_by: userData.user.id,
+        })
+        .select("id")
+        .single()
+
+      if (groupError || !createdGroup) {
+        return NextResponse.json({ message: "大問の作成に失敗しました。" }, { status: 500 })
+      }
+
+      problemGroupId = createdGroup.id
+    }
+  }
+
+  let position = 0
+  if (problemGroupId) {
+    const { data: lastProblem } = await supabase
+      .from("problems")
+      .select("position")
+      .eq("organization_id", organization.id)
+      .eq("problem_group_id", problemGroupId)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    position = typeof lastProblem?.position === "number" ? lastProblem.position + 1 : 0
+  }
+
   const { data: createdProblem, error: problemError } = await supabase
     .from("problems")
     .insert({
       organization_id: organization.id,
+      problem_group_id: problemGroupId,
+      position,
       title: parsed.data.title,
       prompt: parsed.data.prompt,
       type: parsed.data.type,

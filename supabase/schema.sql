@@ -4,6 +4,15 @@ create type public.organization_role as enum ('admin', 'student');
 create type public.problem_type as enum ('single_choice', 'multiple_choice', 'text');
 create type public.invitation_status as enum ('pending', 'accepted', 'revoked');
 
+create table public.problem_groups (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  title text not null,
+  position integer not null default 0,
+  created_by uuid not null references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
 create table public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -48,6 +57,8 @@ create table public.problems (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   course_id uuid references public.courses(id) on delete set null,
+  problem_group_id uuid references public.problem_groups(id) on delete cascade,
+  position integer not null default 0,
   title text not null,
   prompt text,
   type public.problem_type not null,
@@ -113,6 +124,7 @@ alter table public.organizations enable row level security;
 alter table public.organization_members enable row level security;
 alter table public.organization_invitations enable row level security;
 alter table public.courses enable row level security;
+alter table public.problem_groups enable row level security;
 alter table public.problems enable row level security;
 alter table public.problem_options enable row level security;
 alter table public.problem_attempts enable row level security;
@@ -197,6 +209,15 @@ using (public.is_org_member(organization_id));
 
 create policy "admins manage courses"
 on public.courses for all
+using (public.is_org_admin(organization_id))
+with check (public.is_org_admin(organization_id));
+
+create policy "members can read problem groups"
+on public.problem_groups for select
+using (public.is_org_member(organization_id));
+
+create policy "admins manage problem groups"
+on public.problem_groups for all
 using (public.is_org_admin(organization_id))
 with check (public.is_org_admin(organization_id));
 
