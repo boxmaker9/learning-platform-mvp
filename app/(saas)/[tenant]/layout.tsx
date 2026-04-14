@@ -8,8 +8,8 @@ import LogoutButton from "./admin/LogoutButton"
 
 const adminItems = [
   { label: "問題管理", href: "admin/problems" },
-  { label: "大問管理", href: "admin/groups" },
-  { label: "小問管理", href: "admin/problems/new" },
+  { label: "大問作成", href: "admin/groups/new" },
+  { label: "小問作成", href: "admin/problems/new" },
 ]
 
 const studentItems = [

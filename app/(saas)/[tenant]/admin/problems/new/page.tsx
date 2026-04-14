@@ -30,7 +30,6 @@ const typeLabels: Record<ProblemFormValues["type"], string> = {
 }
 
 const defaultValues: ProblemFormValues = {
-  groupTitle: "",
   title: "",
   prompt: "",
   type: "single_choice",
@@ -154,23 +153,6 @@ export default function ProblemCreatePage() {
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={onSubmit} aria-busy={isSubmitting}>
-            <div className="space-y-2">
-              <Label htmlFor="groupTitle">大問タイトル (任意)</Label>
-              <Input
-                id="groupTitle"
-                placeholder="例: 大問1（通信回線の基礎）"
-                {...register("groupTitle")}
-              />
-              <p className="text-xs text-slate-500">
-                同じ大問タイトルを入力して作成すると、その大問の中に小問が追加されます。
-              </p>
-              {errors.groupTitle ? (
-                <p className="text-sm text-red-600" role="alert">
-                  {errors.groupTitle.message}
-                </p>
-              ) : null}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="title">タイトル</Label>
               <Input id="title" placeholder="例: 基礎数学テスト" {...register("title")} />
