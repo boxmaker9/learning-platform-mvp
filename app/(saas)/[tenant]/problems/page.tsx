@@ -62,6 +62,7 @@ export default async function StudentProblemsPage({
     .from("problems")
     .select("id,title,type,created_at")
     .eq("organization_id", organization.id)
+    .is("problem_group_id", null)
     .order("created_at", { ascending: false })
 
   const { data: groups } = await supabase
