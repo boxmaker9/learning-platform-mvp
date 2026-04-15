@@ -72,7 +72,7 @@ export default function GroupAttemptRunner({
             <span className="text-sm font-normal text-slate-500">{progressLabel}</span>
           </CardTitle>
           <CardDescription>
-            全{total}問。送信すると次の小問に進みます。
+            全{total}問。回答を送信すると正誤と解説が表示されます。確認したら「次の小問」で進んでください。
           </CardDescription>
         </CardHeader>
       </Card>
@@ -94,9 +94,6 @@ export default function GroupAttemptRunner({
             explanation={current.explanation}
             onSubmitted={(result) => {
               setLastResult(result.isCorrect)
-              setTimeout(() => {
-                setIndex((prev) => Math.min(prev + 1, total))
-              }, 600)
             }}
           />
 
