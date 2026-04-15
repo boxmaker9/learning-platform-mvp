@@ -10,6 +10,21 @@ type OptionRow = {
   label: string
   position: number | null
   problem_id: string
+  is_correct: boolean
+}
+
+function modelAnswerDisplayForProblem(
+  type: string,
+  answerText: string | null,
+  options: OptionRow[]
+): string {
+  if (type === "text") {
+    const t = answerText?.trim() ?? ""
+    return t.length > 0 ? t : "（模範解答が未設定です）"
+  }
+  const labels = options.filter((o) => o.is_correct).map((o) => o.label)
+  if (labels.length === 0) return "（正解の選択肢が未設定です）"
+  return labels.join("、")
 }
 
 export default async function GroupAttemptPage({
@@ -73,7 +88,7 @@ export default async function GroupAttemptPage({
 
   const { data: problems } = await supabase
     .from("problems")
-    .select("id,title,prompt,type,position,explanation")
+    .select("id,title,prompt,type,position,explanation,answer_text")
     .eq("organization_id", organization.id)
     .eq("problem_group_id", group.id)
     .order("position", { ascending: true })
@@ -84,7 +99,7 @@ export default async function GroupAttemptPage({
     problemIds.length > 0
       ? await supabase
           .from("problem_options")
-          .select("id,label,position,problem_id")
+          .select("id,label,position,problem_id,is_correct")
           .eq("organization_id", organization.id)
           .in("problem_id", problemIds)
           .order("position", { ascending: true })
@@ -97,17 +112,25 @@ export default async function GroupAttemptPage({
     optionsByProblem.set(row.problem_id, list)
   })
 
-  const packed: GroupProblem[] = (problems ?? []).map((p) => ({
-    id: p.id,
-    title: p.title,
-    prompt: p.prompt ?? null,
-    explanation: p.explanation ?? null,
-    type: p.type,
-    options: (optionsByProblem.get(p.id) ?? []).map((o) => ({
-      id: o.id,
-      label: o.label,
-    })),
-  }))
+  const packed: GroupProblem[] = (problems ?? []).map((p) => {
+    const opts = optionsByProblem.get(p.id) ?? []
+    return {
+      id: p.id,
+      title: p.title,
+      prompt: p.prompt ?? null,
+      explanation: p.explanation ?? null,
+      type: p.type,
+      modelAnswerDisplay: modelAnswerDisplayForProblem(
+        p.type,
+        p.answer_text ?? null,
+        opts
+      ),
+      options: opts.map((o) => ({
+        id: o.id,
+        label: o.label,
+      })),
+    }
+  })
 
   return (
     <div className="space-y-6">

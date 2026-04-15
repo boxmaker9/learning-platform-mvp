@@ -21,13 +21,40 @@ type ProblemAttemptFormProps = {
   type: "single_choice" | "multiple_choice" | "text"
   options: ProblemOption[]
   explanation?: string | null
-  onSubmitted?: (result: { isCorrect: boolean | null }) => void
+  onSubmitted?: (result: {
+    isCorrect: boolean | null
+    userAnswerDisplay: string
+  }) => void
 }
 
 type AttemptFormValues = {
   answerText: string
   selectedOptionId: string
   selectedOptionIds: Record<string, boolean>
+}
+
+function formatUserAnswerDisplay(
+  type: "single_choice" | "multiple_choice" | "text",
+  values: AttemptFormValues,
+  options: ProblemOption[]
+): string {
+  if (type === "text") {
+    const t = (values.answerText ?? "").trim()
+    return t.length > 0 ? t : "（未入力）"
+  }
+  if (type === "single_choice") {
+    if (!values.selectedOptionId) return "（未選択）"
+    const opt = options.find((o) => o.id === values.selectedOptionId)
+    return opt?.label ?? "（不明）"
+  }
+  const ids = Object.entries(values.selectedOptionIds)
+    .filter(([, checked]) => checked)
+    .map(([id]) => id)
+  if (ids.length === 0) return "（未選択）"
+  const labels = ids
+    .map((id) => options.find((o) => o.id === id)?.label)
+    .filter((label): label is string => Boolean(label))
+  return labels.join("、")
 }
 
 export default function ProblemAttemptForm({
@@ -97,7 +124,10 @@ export default function ProblemAttemptForm({
         setResultLabel("pending")
       }
 
-      onSubmitted?.({ isCorrect: data.isCorrect })
+      onSubmitted?.({
+        isCorrect: data.isCorrect,
+        userAnswerDisplay: formatUserAnswerDisplay(type, values, options),
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {
