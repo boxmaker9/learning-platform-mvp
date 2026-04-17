@@ -1,7 +1,9 @@
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import ProblemAttemptForm from "./ProblemAttemptForm"
@@ -120,6 +122,14 @@ export default async function ProblemAttemptPage({
             options={(options ?? []) as ProblemOption[]}
             explanation={problem.explanation ?? null}
           />
+          <div className="flex justify-end pt-4">
+            <Link
+              href={`/${params.tenant}/problems`}
+              className={cn(buttonVariants({ variant: "secondary" }))}
+            >
+              問題一覧に戻る
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
