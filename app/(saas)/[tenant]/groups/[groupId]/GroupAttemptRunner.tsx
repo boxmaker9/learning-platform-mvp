@@ -107,9 +107,6 @@ export default function GroupAttemptRunner({
                       {row?.isCorrect === false ? (
                         <p className="mt-2 text-xs font-medium text-red-700">不正解</p>
                       ) : null}
-                      {row?.isCorrect === null && row ? (
-                        <p className="mt-2 text-xs text-slate-600">（この場では正誤なし）</p>
-                      ) : null}
                     </div>
                     <div className="rounded-md border border-emerald-100 bg-emerald-50/50 px-3 py-2">
                       <p className="mb-1 text-xs font-semibold text-emerald-800">模範解答</p>
