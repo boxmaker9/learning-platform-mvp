@@ -33,6 +33,7 @@ const defaultValues: ProblemFormValues = {
   title: "",
   prompt: "",
   type: "single_choice",
+  tags: [],
   options: [
     { label: "", isCorrect: true },
     { label: "", isCorrect: false },
@@ -175,6 +176,29 @@ export default function ProblemCreatePage() {
                   {errors.prompt.message}
                 </p>
               ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tagsText">カテゴリタグ (任意)</Label>
+              <Input
+                id="tagsText"
+                placeholder="例: ネットワーク, 基礎, SB"
+                defaultValue=""
+                onBlur={(event) => {
+                  const raw = event.currentTarget.value
+                  const tags = raw
+                    .split(",")
+                    .map((t) => t.trim())
+                    .filter(Boolean)
+                  setValue("tags", Array.from(new Set(tags)), { shouldValidate: true })
+                }}
+              />
+              {errors.tags ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {errors.tags.message as string}
+                </p>
+              ) : null}
+              <p className="text-xs text-slate-500">カンマ区切りで複数指定できます。</p>
             </div>
 
             <fieldset className="space-y-3" aria-describedby="type-help">
@@ -387,6 +411,16 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
         <Badge>{typeLabels[values.type]}</Badge>
         <span className="text-xs text-slate-500">Preview</span>
       </div>
+
+      {values.tags && values.tags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {values.tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
 
       <div>
         <h2 className="text-lg font-semibold">

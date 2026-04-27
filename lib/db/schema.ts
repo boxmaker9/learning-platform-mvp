@@ -68,6 +68,7 @@ export const problems = pgTable("problems", {
   title: text("title").notNull(),
   prompt: text("prompt"),
   type: problemType("type").notNull(),
+  tags: text("tags").array().notNull().default([]),
   answerText: text("answer_text"),
   explanation: text("explanation"),
   createdBy: uuid("created_by").notNull(),

@@ -74,7 +74,7 @@ export default async function AdminProblemDetailPage({
 
   const { data: problem } = await supabase
     .from("problems")
-    .select("id,title,prompt,type,answer_text,explanation,created_at,problem_group_id,position")
+    .select("id,title,prompt,type,answer_text,explanation,tags,created_at,problem_group_id,position")
     .eq("organization_id", organization.id)
     .eq("id", params.problemId)
     .single()
@@ -114,9 +114,14 @@ export default async function AdminProblemDetailPage({
           <CardDescription>{organization.name}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button asChild variant="secondary">
-            <Link href={`/${params.tenant}/admin/problems`}>一覧へ戻る</Link>
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button asChild variant="secondary">
+              <Link href={`/${params.tenant}/admin/problems`}>一覧へ戻る</Link>
+            </Button>
+            <Button asChild>
+              <Link href={`/${params.tenant}/admin/problems/${problem.id}/edit`}>編集</Link>
+            </Button>
+          </div>
           <DeleteProblemButton tenant={params.tenant} problemId={problem.id} />
         </CardContent>
       </Card>
@@ -136,6 +141,15 @@ export default async function AdminProblemDetailPage({
           )}
         </CardHeader>
         <CardContent className="space-y-4">
+          {Array.isArray((problem as any).tags) && (problem as any).tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {((problem as any).tags as string[]).map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
           <div>
             <p className="text-sm font-medium text-slate-700">問題文</p>
             <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">

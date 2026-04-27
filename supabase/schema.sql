@@ -73,6 +73,7 @@ create table public.problems (
   title text not null,
   prompt text,
   type public.problem_type not null,
+  tags text[] not null default '{}',
   answer_text text,
   explanation text,
   created_by uuid not null references auth.users(id),

@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
+import TagFilter from "./tag-filter"
+
 const typeLabels: Record<string, string> = {
   single_choice: "択一式",
   multiple_choice: "複数選択",
@@ -19,8 +21,10 @@ function formatDate(value: string | null) {
 
 export default async function StudentProblemsPage({
   params,
+  searchParams,
 }: {
   params: { tenant: string }
+  searchParams?: { tag?: string }
 }) {
   const supabase = createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -58,12 +62,22 @@ export default async function StudentProblemsPage({
     )
   }
 
-  const { data: problems } = await supabase
+  const selectedTag =
+    typeof searchParams?.tag === "string" && searchParams.tag.trim().length > 0
+      ? searchParams.tag.trim()
+      : ""
+
+  let problemsQuery = supabase
     .from("problems")
-    .select("id,title,type,created_at")
+    .select("id,title,type,created_at,tags")
     .eq("organization_id", organization.id)
     .is("problem_group_id", null)
-    .order("created_at", { ascending: false })
+
+  if (selectedTag) {
+    problemsQuery = problemsQuery.contains("tags", [selectedTag])
+  }
+
+  const { data: problems } = await problemsQuery.order("created_at", { ascending: false })
 
   const { data: groups } = await supabase
     .from("problem_groups")
@@ -89,6 +103,15 @@ export default async function StudentProblemsPage({
       (groupCountById.get(row.problem_group_id) ?? 0) + 1
     )
   })
+
+  const allTags = Array.from(
+    new Set(
+      (problems ?? [])
+        .flatMap((p) => (Array.isArray((p as any).tags) ? ((p as any).tags as string[]) : []))
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"))
 
   return (
     <div className="space-y-6">
@@ -137,6 +160,7 @@ export default async function StudentProblemsPage({
           <CardDescription>解きたい問題を選んでください。</CardDescription>
         </CardHeader>
         <CardContent>
+          <TagFilter tenant={params.tenant} tags={allTags} selectedTag={selectedTag} />
           {problems && problems.length > 0 ? (
             <div className="space-y-3">
               {problems.map((problem) => (
@@ -151,6 +175,15 @@ export default async function StudentProblemsPage({
                       {typeLabels[problem.type] ?? problem.type}
                     </Badge>
                   </div>
+                  {"tags" in problem && Array.isArray((problem as any).tags) && (problem as any).tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {((problem as any).tags as string[]).slice(0, 6).map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>作成日: {formatDate(problem.created_at)}</span>
                     <span>解く</span>
@@ -160,7 +193,7 @@ export default async function StudentProblemsPage({
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
-              まだ問題がありません。
+              {selectedTag ? "このタグの問題がありません。" : "まだ問題がありません。"}
             </div>
           )}
         </CardContent>

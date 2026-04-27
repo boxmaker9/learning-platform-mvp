@@ -12,6 +12,10 @@ export const problemSchema = z
     title: z.string().min(1, "タイトルは必須です。"),
     prompt: z.string().min(1, "問題文は必須です。"),
     type: z.enum(["single_choice", "multiple_choice", "text"]),
+    tags: z
+      .array(z.string().min(1))
+      .max(10, "タグは最大10個までです。")
+      .default([]),
     options: z.array(problemOptionSchema).default([]),
     textAnswer: z.string().optional(),
     explanation: z.string().optional(),

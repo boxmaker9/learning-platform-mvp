@@ -111,6 +111,7 @@ export async function POST(
       title: parsed.data.title,
       prompt: parsed.data.prompt,
       type: parsed.data.type,
+      tags: parsed.data.tags ?? [],
       answer_text: parsed.data.textAnswer ?? null,
       explanation: parsed.data.explanation ?? null,
       created_by: userData.user.id,
