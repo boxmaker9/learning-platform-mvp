@@ -199,9 +199,9 @@ export default async function AdminProblemsPage({
                       <p className="min-w-0 truncate font-medium">{problem.title}</p>
                       <Link
                         className="shrink-0 text-xs font-medium text-primary-600 hover:underline"
-                        href={`/${params.tenant}/admin/problems/${problem.id}`}
+                        href={`/${params.tenant}/admin/problems/${problem.id}/edit`}
                       >
-                        詳細
+                        編集
                       </Link>
                     </div>
                     <Badge variant="secondary">
