@@ -27,6 +27,7 @@ const baseDefaultValues: ProblemFormValues = {
   title: "",
   prompt: "",
   type: "single_choice",
+  tags: [],
   options: [
     { label: "", isCorrect: true },
     { label: "", isCorrect: false },
