@@ -48,6 +48,18 @@ export async function POST(request: Request) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
+      if (String(error.message).toLowerCase().includes("fetch failed")) {
+        return NextResponse.json(
+          {
+            message: "ログインに失敗しました（Supabaseへの接続に失敗しました）。",
+            detail: error.message,
+            hint:
+              "Vercelの環境変数 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY が正しいか、対象のVercelプロジェクトに設定されているか確認してください。",
+          },
+          { status: 503 }
+        )
+      }
+
       return NextResponse.json({ message: error.message }, { status: 401 })
     }
 
