@@ -190,13 +190,20 @@ export default async function AdminProblemsPage({
           {problems && problems.length > 0 ? (
             <div className="space-y-3">
               {problems.map((problem) => (
-                <Link
+                <div
                   key={problem.id}
-                  href={`/${params.tenant}/admin/problems/${problem.id}`}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm transition hover:border-primary-200"
+                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <p className="font-medium">{problem.title}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <p className="min-w-0 truncate font-medium">{problem.title}</p>
+                      <Link
+                        className="shrink-0 text-xs font-medium text-primary-600 hover:underline"
+                        href={`/${params.tenant}/admin/problems/${problem.id}`}
+                      >
+                        詳細
+                      </Link>
+                    </div>
                     <Badge variant="secondary">
                       {typeLabels[problem.type] ?? problem.type}
                     </Badge>
@@ -205,7 +212,7 @@ export default async function AdminProblemsPage({
                     <span>作成日: {formatDate(problem.created_at)}</span>
                     <DeleteProblemButton tenant={params.tenant} problemId={problem.id} />
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
