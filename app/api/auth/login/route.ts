@@ -11,7 +11,13 @@ const loginSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const payload = await request.json()
+  let payload: unknown
+  try {
+    payload = await request.json()
+  } catch {
+    return NextResponse.json({ message: "リクエスト形式が不正です。" }, { status: 400 })
+  }
+
   const parsed = loginSchema.safeParse(payload)
 
   if (!parsed.success) {
@@ -21,7 +27,6 @@ export async function POST(request: Request) {
     )
   }
 
-  const supabase = createSupabaseServerClient()
   const tenant = normalizeTenantSlug(parsed.data.tenant)
   const identifier = String(parsed.data.identifier).trim()
   const password = parsed.data.password
@@ -38,12 +43,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "ログインIDまたはメールアドレスを確認してください。" }, { status: 400 })
   }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  try {
+    const supabase = createSupabaseServerClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error) {
-    return NextResponse.json({ message: error.message }, { status: 401 })
+    if (error) {
+      return NextResponse.json({ message: error.message }, { status: 401 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Supabaseへの接続に失敗しました。"
+    return NextResponse.json(
+      {
+        message: "ログインに失敗しました（サーバー側の通信エラー）。",
+        detail: message,
+        hint:
+          "Vercelの環境変数 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY が正しいか確認してください。",
+      },
+      { status: 503 }
+    )
   }
-
-  return NextResponse.json({ success: true })
 }
 
