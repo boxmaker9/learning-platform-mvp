@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import DeleteProblemButton from "./DeleteProblemButton"
 import DeleteGroupButton from "./DeleteGroupButton"
+import TagFilter from "../../problems/tag-filter"
 
 const typeLabels: Record<string, string> = {
   single_choice: "択一式",
@@ -23,8 +24,10 @@ function formatDate(value: string | null) {
 
 export default async function AdminProblemsPage({
   params,
+  searchParams,
 }: {
   params: { tenant: string }
+  searchParams?: { tag?: string }
 }) {
   const supabase = createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -80,12 +83,22 @@ export default async function AdminProblemsPage({
     )
   }
 
-  const { data: problems } = await supabase
+  const selectedTag =
+    typeof searchParams?.tag === "string" && searchParams.tag.trim().length > 0
+      ? searchParams.tag.trim()
+      : ""
+
+  let problemsQuery = supabase
     .from("problems")
-    .select("id,title,type,created_at")
+    .select("id,title,type,created_at,tags")
     .eq("organization_id", organization.id)
     .is("problem_group_id", null)
-    .order("created_at", { ascending: false })
+
+  if (selectedTag) {
+    problemsQuery = problemsQuery.contains("tags", [selectedTag])
+  }
+
+  const { data: problems } = await problemsQuery.order("created_at", { ascending: false })
 
   const { data: groups } = await supabase
     .from("problem_groups")
@@ -111,6 +124,15 @@ export default async function AdminProblemsPage({
       (groupCountById.get(row.problem_group_id) ?? 0) + 1
     )
   })
+
+  const allTags = Array.from(
+    new Set(
+      (problems ?? [])
+        .flatMap((p) => (Array.isArray((p as any).tags) ? ((p as any).tags as string[]) : []))
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"))
 
   return (
     <div className="space-y-6">
@@ -187,6 +209,7 @@ export default async function AdminProblemsPage({
           <CardDescription>最新の小問から表示されます。</CardDescription>
         </CardHeader>
         <CardContent>
+          <TagFilter tenant={params.tenant} tags={allTags} selectedTag={selectedTag} />
           {problems && problems.length > 0 ? (
             <div className="space-y-3">
               {problems.map((problem) => (
@@ -217,7 +240,9 @@ export default async function AdminProblemsPage({
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
-              まだ小問がありません。右上の「小問を作成」から追加してください。
+              {selectedTag
+                ? "このタグの小問がありません。"
+                : "まだ小問がありません。右上の「小問を作成」から追加してください。"}
             </div>
           )}
         </CardContent>
