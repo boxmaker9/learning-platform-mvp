@@ -77,6 +77,7 @@ export default function ProblemEditPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [tagsTextInput, setTagsTextInput] = useState("")
 
   const {
     control,
@@ -137,6 +138,7 @@ export default function ProblemEditPage() {
         }
 
         reset(initial)
+        setTagsTextInput((initial.tags ?? []).join(", "))
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : "読み込みに失敗しました。")
       }
@@ -212,9 +214,6 @@ export default function ProblemEditPage() {
     }
   })
 
-  const tagsValue = watch("tags")
-  const tagsText = Array.isArray(tagsValue) ? tagsValue.join(", ") : ""
-
   return (
     <div className="space-y-6">
       <Card>
@@ -270,7 +269,8 @@ export default function ProblemEditPage() {
                 <Input
                   id="tagsText"
                   placeholder="例: ネットワーク, 基礎, SB"
-                  defaultValue={tagsText}
+                  value={tagsTextInput}
+                  onChange={(event) => setTagsTextInput(event.currentTarget.value)}
                   onBlur={(event) => {
                     const raw = event.currentTarget.value
                     const tags = raw
