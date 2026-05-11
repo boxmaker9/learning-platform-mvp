@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 const createGroupSchema = z.object({
   title: z.string().min(1),
+  tags: z.array(z.string().min(1)).max(10).optional(),
 })
 
 export async function GET(
@@ -41,7 +42,7 @@ export async function GET(
 
   const { data: groups, error } = await supabase
     .from("problem_groups")
-    .select("id,title,created_at")
+    .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false })
 
@@ -95,12 +96,16 @@ export async function POST(
   }
 
   const title = parsed.data.title.trim()
+  const tags = Array.from(
+    new Set((parsed.data.tags ?? []).map((t) => t.trim()).filter(Boolean))
+  )
 
   const { data: createdGroup, error } = await supabase
     .from("problem_groups")
     .insert({
       organization_id: organization.id,
       title,
+      tags,
       created_by: userData.user.id,
     })
     .select("id")

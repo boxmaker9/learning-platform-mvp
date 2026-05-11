@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -65,7 +66,7 @@ export default async function AdminGroupsPage({
 
   const { data: groups } = await supabase
     .from("problem_groups")
-    .select("id,title,created_at")
+    .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false })
 
@@ -117,7 +118,18 @@ export default async function AdminGroupsPage({
                   className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <p className="min-w-0 truncate font-medium">{group.title}</p>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{group.title}</p>
+                      {"tags" in group && Array.isArray((group as any).tags) && (group as any).tags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {((group as any).tags as string[]).slice(0, 6).map((tag) => (
+                            <Badge key={tag} variant="secondary">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                     <span className="shrink-0 text-xs text-slate-500">
                       全{groupCountById.get(group.id) ?? 0}問
                     </span>

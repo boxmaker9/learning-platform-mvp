@@ -81,6 +81,7 @@ export const problemGroups = pgTable("problem_groups", {
   organizationId: uuid("organization_id").notNull(),
   title: text("title").notNull(),
   position: integer("position").notNull().default(0),
+  tags: text("tags").array().notNull().default([]),
   createdBy: uuid("created_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })

@@ -17,7 +17,7 @@ import {
 
 import GroupProblemForm from "../GroupProblemForm"
 
-type GroupRow = { id: string; title: string }
+type GroupRow = { id: string; title: string; tags?: string[] }
 
 export default function AdminGroupCreatePage() {
   const params = useParams()
@@ -35,6 +35,7 @@ export default function AdminGroupCreatePage() {
   const [groups, setGroups] = useState<GroupRow[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<string>("")
   const [selectedGroupTitle, setSelectedGroupTitle] = useState<string>("")
+  const [tagsText, setTagsText] = useState<string>("")
 
   useEffect(() => {
     const run = async () => {
@@ -64,12 +65,16 @@ export default function AdminGroupCreatePage() {
 
     const formData = new FormData(event.currentTarget)
     const title = String(formData.get("title") ?? "").trim()
+    const tags = tagsText
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
 
     try {
       const response = await fetch(`/api/tenants/${tenant}/groups`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, tags }),
       })
 
       if (!response.ok) {
@@ -82,8 +87,9 @@ export default function AdminGroupCreatePage() {
       formRef.current?.reset()
       setSelectedGroupId(payload.id)
       setSelectedGroupTitle(title)
+      setTagsText("")
 
-      setGroups((prev) => [{ id: payload.id, title }, ...prev])
+      setGroups((prev) => [{ id: payload.id, title, tags }, ...prev])
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
     } finally {
@@ -115,6 +121,16 @@ export default function AdminGroupCreatePage() {
                 required
                 placeholder="例: 大問1（通信回線の基礎）"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tags">カテゴリタグ (任意)</Label>
+              <Input
+                id="tags"
+                value={tagsText}
+                onChange={(e) => setTagsText(e.currentTarget.value)}
+                placeholder="例: 回線, 基礎, SB"
+              />
+              <p className="text-xs text-slate-500">カンマ区切りで複数指定できます。</p>
             </div>
             {error ? (
               <p className="text-sm text-red-600" role="alert">

@@ -81,7 +81,7 @@ export default async function StudentProblemsPage({
 
   const { data: groups } = await supabase
     .from("problem_groups")
-    .select("id,title,created_at")
+    .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false })
 
@@ -138,6 +138,15 @@ export default async function StudentProblemsPage({
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{group.title}</p>
+                    {"tags" in group && Array.isArray((group as any).tags) && (group as any).tags.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {((group as any).tags as string[]).slice(0, 6).map((tag) => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
                     <p className="mt-1 text-xs text-slate-500">
                       全{groupCountById.get(group.id) ?? 0}問
                     </p>

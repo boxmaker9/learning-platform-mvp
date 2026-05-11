@@ -17,6 +17,7 @@ create table public.problem_groups (
   organization_id uuid not null references public.organizations(id) on delete cascade,
   title text not null,
   position integer not null default 0,
+  tags text[] not null default '{}',
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now()
 );

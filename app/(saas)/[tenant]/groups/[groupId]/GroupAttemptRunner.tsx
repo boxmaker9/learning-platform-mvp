@@ -135,9 +135,6 @@ export default function GroupAttemptRunner({
             })}
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button type="button" variant="secondary" onClick={() => setIndex(total - 1)}>
-                最後の小問に戻る
-              </Button>
               <Link
                 href={`/${tenant}/problems`}
                 className={cn(buttonVariants({ variant: "secondary" }))}
