@@ -27,6 +27,11 @@ export type GroupProblem = {
 type StoredAnswer = {
   userAnswer: string
   isCorrect: boolean | null
+  submittedValues: {
+    answerText: string
+    selectedOptionId: string
+    selectedOptionIds: Record<string, boolean>
+  }
 }
 
 export default function GroupAttemptRunner({
@@ -46,6 +51,7 @@ export default function GroupAttemptRunner({
 
   const total = problems.length
   const current = index < total ? problems[index] : undefined
+  const currentStored = current ? answersByProblemId[current.id] : undefined
 
   const progressLabel = useMemo(() => {
     if (total === 0) return "0 / 0"
@@ -169,6 +175,8 @@ export default function GroupAttemptRunner({
             type={current.type}
             options={current.options}
             explanation={current.explanation}
+            locked={Boolean(currentStored)}
+            initialValues={currentStored?.submittedValues}
             onSubmitted={(result) => {
               setLastResult(result.isCorrect)
               setAnswersByProblemId((prev) => ({
@@ -176,6 +184,7 @@ export default function GroupAttemptRunner({
                 [current.id]: {
                   userAnswer: result.userAnswerDisplay,
                   isCorrect: result.isCorrect,
+                  submittedValues: result.submittedValues,
                 },
               }))
             }}

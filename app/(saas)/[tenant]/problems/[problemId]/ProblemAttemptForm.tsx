@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -21,9 +21,12 @@ type ProblemAttemptFormProps = {
   type: "single_choice" | "multiple_choice" | "text"
   options: ProblemOption[]
   explanation?: string | null
+  initialValues?: Partial<AttemptFormValues>
+  locked?: boolean
   onSubmitted?: (result: {
     isCorrect: boolean | null
     userAnswerDisplay: string
+    submittedValues: AttemptFormValues
   }) => void
 }
 
@@ -63,24 +66,42 @@ export default function ProblemAttemptForm({
   type,
   options,
   explanation,
+  initialValues,
+  locked,
   onSubmitted,
 }: ProblemAttemptFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [resultLabel, setResultLabel] = useState<"correct" | "incorrect" | "pending" | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
 
-  const { register, handleSubmit, setValue, watch } = useForm<AttemptFormValues>({
-    defaultValues: {
+  const defaultValues = useMemo<AttemptFormValues>(
+    () => ({
       answerText: "",
       selectedOptionId: "",
       selectedOptionIds: {},
-    },
+      ...(initialValues ?? {}),
+    }),
+    [initialValues]
+  )
+
+  const { register, handleSubmit, setValue, watch, reset } = useForm<AttemptFormValues>({
+    defaultValues,
   })
+
+  useEffect(() => {
+    reset(defaultValues)
+    setError(null)
+    setSuccess(null)
+    setResultLabel(null)
+    setHasSubmitted(Boolean(locked))
+  }, [defaultValues, locked, reset])
 
   const selectedOptionIds = watch("selectedOptionIds")
 
   const onSubmit = handleSubmit(async (values) => {
+    if (locked || hasSubmitted) return
     setError(null)
     setSuccess(null)
     setResultLabel(null)
@@ -123,10 +144,12 @@ export default function ProblemAttemptForm({
       } else {
         setResultLabel("pending")
       }
+      setHasSubmitted(true)
 
       onSubmitted?.({
         isCorrect: data.isCorrect,
         userAnswerDisplay: formatUserAnswerDisplay(type, values, options),
+        submittedValues: values,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "通信エラーが発生しました。")
@@ -140,14 +163,17 @@ export default function ProblemAttemptForm({
       {type === "text" ? (
         <div className="space-y-2">
           <Label htmlFor="answerText">回答</Label>
-          <Textarea id="answerText" {...register("answerText")} />
+          <Textarea id="answerText" {...register("answerText")} disabled={Boolean(locked || hasSubmitted)} />
         </div>
       ) : type === "single_choice" ? (
         <div className="space-y-3">
           <Label>選択肢</Label>
           <RadioGroup
             value={watch("selectedOptionId")}
-            onValueChange={(value) => setValue("selectedOptionId", value)}
+            onValueChange={(value) => {
+              if (locked || hasSubmitted) return
+              setValue("selectedOptionId", value)
+            }}
             className="space-y-2"
           >
             {options.map((option) => (
@@ -155,7 +181,7 @@ export default function ProblemAttemptForm({
                 key={option.id}
                 className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
               >
-                <RadioGroupItem value={option.id} />
+                <RadioGroupItem value={option.id} disabled={Boolean(locked || hasSubmitted)} />
                 <span>{option.label}</span>
               </label>
             ))}
@@ -172,8 +198,11 @@ export default function ProblemAttemptForm({
               <Checkbox
                 checked={Boolean(selectedOptionIds?.[option.id])}
                 onCheckedChange={(checked) =>
-                  setValue(`selectedOptionIds.${option.id}`, checked === true)
+                  locked || hasSubmitted
+                    ? undefined
+                    : setValue(`selectedOptionIds.${option.id}`, checked === true)
                 }
+                disabled={Boolean(locked || hasSubmitted)}
               />
               <span>{option.label}</span>
             </label>
@@ -213,8 +242,8 @@ export default function ProblemAttemptForm({
         </div>
       ) : null}
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "送信中..." : "回答を送信"}
+      <Button type="submit" disabled={isSubmitting || Boolean(locked || hasSubmitted)}>
+        {locked || hasSubmitted ? "回答済み" : isSubmitting ? "送信中..." : "回答を送信"}
       </Button>
     </form>
   )
