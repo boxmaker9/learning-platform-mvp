@@ -121,6 +121,16 @@ export default function GroupAttemptRunner({
                       </p>
                     </div>
                   </div>
+                  {p.explanation ? (
+                    <details className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-2">
+                      <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                        解説を表示
+                      </summary>
+                      <div className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
+                        {p.explanation}
+                      </div>
+                    </details>
+                  ) : null}
                 </section>
               )
             })}
