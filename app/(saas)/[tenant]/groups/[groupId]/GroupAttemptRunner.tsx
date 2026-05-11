@@ -44,7 +44,6 @@ export default function GroupAttemptRunner({
   problems: GroupProblem[]
 }) {
   const [index, setIndex] = useState(0)
-  const [lastResult, setLastResult] = useState<boolean | null | undefined>(undefined)
   const [answersByProblemId, setAnswersByProblemId] = useState<
     Record<string, StoredAnswer>
   >({})
@@ -188,7 +187,6 @@ export default function GroupAttemptRunner({
             locked={Boolean(currentStored)}
             initialValues={currentStored?.submittedValues}
             onSubmitted={(result) => {
-              setLastResult(result.isCorrect)
               setAnswersByProblemId((prev) => ({
                 ...prev,
                 [current.id]: {
@@ -209,9 +207,6 @@ export default function GroupAttemptRunner({
             >
               前の小問
             </Button>
-            <div className="text-xs text-slate-500">
-              {lastResult === true ? "直前: 正解" : lastResult === false ? "直前: 不正解" : null}
-            </div>
             {index < total - 1 ? (
               <Button
                 type="button"

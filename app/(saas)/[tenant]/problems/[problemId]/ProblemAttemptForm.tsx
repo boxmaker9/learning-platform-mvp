@@ -243,7 +243,7 @@ export default function ProblemAttemptForm({
       ) : null}
 
       <Button type="submit" disabled={isSubmitting || Boolean(locked || hasSubmitted)}>
-        {locked || hasSubmitted ? "回答済み" : isSubmitting ? "送信中..." : "回答を送信"}
+        {locked || hasSubmitted ? "送信済み" : isSubmitting ? "送信中..." : "回答を送信"}
       </Button>
     </form>
   )
