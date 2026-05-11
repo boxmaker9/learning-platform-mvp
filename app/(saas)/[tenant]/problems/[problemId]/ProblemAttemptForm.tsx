@@ -57,7 +57,7 @@ function formatUserAnswerDisplay(
   const labels = ids
     .map((id) => options.find((o) => o.id === id)?.label)
     .filter((label): label is string => Boolean(label))
-  return labels.join("、")
+  return labels.join("・")
 }
 
 export default function ProblemAttemptForm({

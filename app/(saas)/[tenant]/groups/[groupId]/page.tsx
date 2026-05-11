@@ -24,7 +24,7 @@ function modelAnswerDisplayForProblem(
   }
   const labels = options.filter((o) => o.is_correct).map((o) => o.label)
   if (labels.length === 0) return "（正解の選択肢が未設定です）"
-  return labels.join("、")
+  return labels.join("・")
 }
 
 export default async function GroupAttemptPage({
