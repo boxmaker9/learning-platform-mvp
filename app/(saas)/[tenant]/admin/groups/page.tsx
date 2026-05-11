@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
+import TagFilter from "../../problems/tag-filter"
+
 export default async function AdminGroupsPage({
   params,
+  searchParams,
 }: {
   params: { tenant: string }
+  searchParams?: { groupTag?: string }
 }) {
   const supabase = createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -64,11 +68,21 @@ export default async function AdminGroupsPage({
     )
   }
 
-  const { data: groups } = await supabase
+  const selectedGroupTag =
+    typeof searchParams?.groupTag === "string" && searchParams.groupTag.trim().length > 0
+      ? searchParams.groupTag.trim()
+      : ""
+
+  let groupsQuery = supabase
     .from("problem_groups")
     .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false })
+
+  if (selectedGroupTag) {
+    groupsQuery = groupsQuery.contains("tags", [selectedGroupTag])
+  }
+
+  const { data: groups } = await groupsQuery.order("created_at", { ascending: false })
 
   const groupIds = (groups ?? []).map((g) => g.id)
   const { data: groupedProblems } =
@@ -88,6 +102,15 @@ export default async function AdminGroupsPage({
       (groupCountById.get(row.problem_group_id) ?? 0) + 1
     )
   })
+
+  const allGroupTags = Array.from(
+    new Set(
+      (groups ?? [])
+        .flatMap((g) => (Array.isArray((g as any).tags) ? ((g as any).tags as string[]) : []))
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"))
 
   return (
     <div className="space-y-6">
@@ -110,6 +133,22 @@ export default async function AdminGroupsPage({
           <CardDescription>大問を選んで小問を追加できます。</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <Link
+              className="text-xs font-medium text-primary-600 hover:underline"
+              href={`/${params.tenant}/admin/groups/new`}
+            >
+              大問を作成
+            </Link>
+          </div>
+          <TagFilter
+            tenant={params.tenant}
+            tags={allGroupTags}
+            selectedTag={selectedGroupTag}
+            queryKey="groupTag"
+            label="タグで絞り込み"
+            htmlId="adminGroupTagFilter"
+          />
           {groups && groups.length > 0 ? (
             <div className="space-y-3">
               {groups.map((group) => (
@@ -135,20 +174,25 @@ export default async function AdminGroupsPage({
                     </span>
                   </div>
                   <div className="flex items-center justify-end">
-                    <Button asChild variant="secondary" size="sm">
-                      <Link
-                        href={`/${params.tenant}/admin/groups/${group.id}/problems/new`}
-                      >
-                        小問を追加
-                      </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button asChild variant="secondary" size="sm">
+                        <Link href={`/${params.tenant}/admin/groups/${group.id}/edit`}>編集</Link>
+                      </Button>
+                      <Button asChild variant="secondary" size="sm">
+                        <Link href={`/${params.tenant}/admin/groups/${group.id}/problems/new`}>
+                          小問を追加
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
-              まだ大問がありません。「大問を作成」から追加してください。
+              {selectedGroupTag
+                ? "このタグの大問がありません。"
+                : "まだ大問がありません。「大問を作成」から追加してください。"}
             </div>
           )}
         </CardContent>

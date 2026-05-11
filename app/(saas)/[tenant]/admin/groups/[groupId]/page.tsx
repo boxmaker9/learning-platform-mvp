@@ -122,6 +122,9 @@ export default async function AdminGroupDetailPage({
                 小問を追加
               </Link>
             </Button>
+            <Button asChild variant="secondary">
+              <Link href={`/${params.tenant}/admin/groups/${group.id}/edit`}>編集</Link>
+            </Button>
             <DeleteGroupButton tenant={params.tenant} groupId={group.id} />
           </div>
         </CardContent>

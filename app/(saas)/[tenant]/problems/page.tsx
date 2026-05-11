@@ -24,7 +24,7 @@ export default async function StudentProblemsPage({
   searchParams,
 }: {
   params: { tenant: string }
-  searchParams?: { tag?: string }
+  searchParams?: { tag?: string; groupTag?: string }
 }) {
   const supabase = createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -67,6 +67,11 @@ export default async function StudentProblemsPage({
       ? searchParams.tag.trim()
       : ""
 
+  const selectedGroupTag =
+    typeof searchParams?.groupTag === "string" && searchParams.groupTag.trim().length > 0
+      ? searchParams.groupTag.trim()
+      : ""
+
   let problemsQuery = supabase
     .from("problems")
     .select("id,title,type,created_at,tags")
@@ -79,11 +84,16 @@ export default async function StudentProblemsPage({
 
   const { data: problems } = await problemsQuery.order("created_at", { ascending: false })
 
-  const { data: groups } = await supabase
+  let groupsQuery = supabase
     .from("problem_groups")
     .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false })
+
+  if (selectedGroupTag) {
+    groupsQuery = groupsQuery.contains("tags", [selectedGroupTag])
+  }
+
+  const { data: groups } = await groupsQuery.order("created_at", { ascending: false })
 
   const groupIds = (groups ?? []).map((g) => g.id)
   const { data: groupedProblems } =
@@ -103,6 +113,15 @@ export default async function StudentProblemsPage({
       (groupCountById.get(row.problem_group_id) ?? 0) + 1
     )
   })
+
+  const allGroupTags = Array.from(
+    new Set(
+      (groups ?? [])
+        .flatMap((g) => (Array.isArray((g as any).tags) ? ((g as any).tags as string[]) : []))
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"))
 
   const allTags = Array.from(
     new Set(
@@ -128,6 +147,14 @@ export default async function StudentProblemsPage({
           <CardDescription>大問を選ぶと小問を連続で解けます。</CardDescription>
         </CardHeader>
         <CardContent>
+          <TagFilter
+            tenant={params.tenant}
+            tags={allGroupTags}
+            selectedTag={selectedGroupTag}
+            queryKey="groupTag"
+            label="大問タグで絞り込み"
+            htmlId="groupTagFilter"
+          />
           {groups && groups.length > 0 ? (
             <div className="space-y-3">
               {groups.map((group) => (
@@ -157,7 +184,7 @@ export default async function StudentProblemsPage({
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
-              大問がまだありません。
+              {selectedGroupTag ? "このタグの大問がありません。" : "大問がまだありません。"}
             </div>
           )}
         </CardContent>
