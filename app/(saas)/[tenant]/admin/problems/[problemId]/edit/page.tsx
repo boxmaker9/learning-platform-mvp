@@ -167,19 +167,18 @@ export default function ProblemEditPage() {
     }
   }, [type, fields.length, replace])
 
-  const correctIndex = useMemo(() => {
-    if (!options || options.length === 0) return ""
-    const index = options.findIndex((option) => option.isCorrect)
-    return index >= 0 ? String(index) : ""
-  }, [options])
+  const singleCorrectRadioName = useMemo(
+    () => `pf-single-correct-${problemId || "edit"}`,
+    [problemId]
+  )
 
-  const handleSingleChoiceSelect = (value: string) => {
-    const index = Number(value)
-    options.forEach((_, optionIndex) => {
+  const handleSingleChoiceSelect = (index: number) => {
+    const n = fields.length
+    for (let optionIndex = 0; optionIndex < n; optionIndex++) {
       setValue(`options.${optionIndex}.isCorrect`, optionIndex === index, {
         shouldValidate: true,
       })
-    })
+    }
   }
 
   const handleRemoveOption = (index: number) => {
@@ -350,12 +349,7 @@ export default function ProblemEditPage() {
                   ) : null}
 
                   {type === "single_choice" ? (
-                    <RadioGroup
-                      name={`${radioNamePrefix}-single-correct`}
-                      value={correctIndex}
-                      onValueChange={handleSingleChoiceSelect}
-                      className="space-y-3"
-                    >
+                    <div className="space-y-3" role="radiogroup" aria-label="正解の選択肢">
                       {fields.map((field, index) => (
                         <div
                           key={field.id}
@@ -377,8 +371,15 @@ export default function ProblemEditPage() {
                             </Button>
                           </div>
 
-                          <label className="flex items-center gap-2 text-sm text-slate-600">
-                            <RadioGroupItem value={String(index)} />
+                          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                            <input
+                              type="radio"
+                              name={singleCorrectRadioName}
+                              checked={Boolean(options?.[index]?.isCorrect)}
+                              onChange={() => handleSingleChoiceSelect(index)}
+                              className="h-4 w-4 shrink-0 cursor-pointer rounded-full border border-gray-300 text-primary-600 accent-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                              aria-label={`選択肢 ${index + 1} を正解に設定`}
+                            />
                             正解に設定
                           </label>
 
@@ -389,7 +390,7 @@ export default function ProblemEditPage() {
                           ) : null}
                         </div>
                       ))}
-                    </RadioGroup>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {fields.map((field, index) => (
