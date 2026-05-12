@@ -181,6 +181,7 @@ export default function AdminGroupCreatePage() {
 
       {selectedGroupId ? (
         <GroupProblemForm
+          key={selectedGroupId}
           tenant={tenant}
           groupId={selectedGroupId}
           groupTitle={selectedTitle}

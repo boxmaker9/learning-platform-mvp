@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache"
 import { NextResponse } from "next/server"
 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -49,7 +50,9 @@ export async function POST(
     typeof parsed.data.groupTitle === "string" ? parsed.data.groupTitle.trim() : ""
 
   let problemGroupId: string | null =
-    typeof parsed.data.groupId === "string" ? parsed.data.groupId : null
+    typeof parsed.data.groupId === "string" && parsed.data.groupId.trim().length > 0
+      ? parsed.data.groupId.trim()
+      : null
 
   if (!problemGroupId && groupTitle.length > 0) {
     const { data: existingGroup } = await supabase
@@ -151,6 +154,15 @@ export async function POST(
         )
       }
     }
+  }
+
+  const tenantPath = `/${params.tenant}`
+  revalidatePath(`${tenantPath}/admin/groups`)
+  revalidatePath(`${tenantPath}/admin/problems`)
+  revalidatePath(`${tenantPath}/problems`)
+  if (problemGroupId && problemGroupId.length > 0) {
+    revalidatePath(`${tenantPath}/admin/groups/${problemGroupId}`)
+    revalidatePath(`${tenantPath}/groups/${problemGroupId}`)
   }
 
   return NextResponse.json({ id: createdProblem.id })

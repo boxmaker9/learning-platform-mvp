@@ -127,6 +127,12 @@ export default function GroupProblemForm({
     }, 0)
   }
 
+  const buildCreatePayload = (values: ProblemFormValues): ProblemFormValues => ({
+    ...values,
+    // Route の大問IDを必ず送る（RHF の submit に groupId が含まれないと problem_group_id が null になる）
+    groupId: (groupId || values.groupId || "") as ProblemFormValues["groupId"],
+  })
+
   const saveOne = async (values: ProblemFormValues) => {
     setSubmitError(null)
     setSubmitSuccess(false)
@@ -135,7 +141,7 @@ export default function GroupProblemForm({
       const response = await fetch(`/api/tenants/${tenant}/problems`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(buildCreatePayload(values)),
       })
 
       if (!response.ok) {
@@ -197,8 +203,14 @@ export default function GroupProblemForm({
         <CardContent>
           <form className="space-y-6" onSubmit={onSubmit} aria-busy={isSubmitting}>
             <div className="space-y-2">
-              <Label htmlFor="groupId">大問ID</Label>
-              <Input id="groupId" value={groupId} readOnly />
+              <Label htmlFor="groupId-display">大問ID</Label>
+              <input type="hidden" {...register("groupId")} />
+              <p
+                id="groupId-display"
+                className="rounded-md border border-gray-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700"
+              >
+                {groupId}
+              </p>
             </div>
 
             <div className="space-y-2">
