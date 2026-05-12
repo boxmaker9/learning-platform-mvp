@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -78,6 +78,7 @@ export default function ProblemEditPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [tagsTextInput, setTagsTextInput] = useState("")
+  const radioNamePrefix = useId()
 
   const {
     control,
@@ -294,6 +295,7 @@ export default function ProblemEditPage() {
                   形式を変更すると、必要な入力が変わります。
                 </p>
                 <RadioGroup
+                  name={`${radioNamePrefix}-problem-type`}
                   value={type}
                   onValueChange={(value) =>
                     setValue("type", value as ProblemFormValues["type"], {
@@ -349,6 +351,7 @@ export default function ProblemEditPage() {
 
                   {type === "single_choice" ? (
                     <RadioGroup
+                      name={`${radioNamePrefix}-single-correct`}
                       value={correctIndex}
                       onValueChange={handleSingleChoiceSelect}
                       className="space-y-3"

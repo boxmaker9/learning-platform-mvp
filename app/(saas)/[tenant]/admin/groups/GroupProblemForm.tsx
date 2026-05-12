@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { Eye, Plus, Trash2 } from "lucide-react"
@@ -50,6 +50,7 @@ export default function GroupProblemForm({
   const [queue, setQueue] = useState<ProblemFormValues[]>([])
   const [queueError, setQueueError] = useState<string | null>(null)
   const [isQueueSaving, setIsQueueSaving] = useState(false)
+  const radioNamePrefix = useId()
 
   const defaultValues = useMemo(
     () => ({
@@ -230,6 +231,7 @@ export default function GroupProblemForm({
                 作成する問題形式を選択してください。
               </p>
               <RadioGroup
+                name={`${radioNamePrefix}-problem-type`}
                 value={type}
                 onValueChange={(value) =>
                   setValue("type", value as ProblemFormValues["type"], {
@@ -291,6 +293,7 @@ export default function GroupProblemForm({
 
                 {type === "single_choice" ? (
                   <RadioGroup
+                    name={`${radioNamePrefix}-single-correct`}
                     value={correctIndex}
                     onValueChange={handleSingleChoiceSelect}
                     className="space-y-3"

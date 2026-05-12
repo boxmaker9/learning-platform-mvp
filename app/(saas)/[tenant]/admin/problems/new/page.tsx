@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
@@ -53,6 +53,7 @@ export default function ProblemCreatePage() {
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const radioNamePrefix = useId()
 
   const {
     control,
@@ -207,6 +208,7 @@ export default function ProblemCreatePage() {
                 作成する問題形式を選択してください。
               </p>
               <RadioGroup
+                name={`${radioNamePrefix}-problem-type`}
                 value={type}
                 onValueChange={(value) =>
                   setValue("type", value as ProblemFormValues["type"], {
@@ -268,6 +270,7 @@ export default function ProblemCreatePage() {
 
                 {type === "single_choice" ? (
                   <RadioGroup
+                    name={`${radioNamePrefix}-single-correct`}
                     value={correctIndex}
                     onValueChange={handleSingleChoiceSelect}
                     className="space-y-3"
