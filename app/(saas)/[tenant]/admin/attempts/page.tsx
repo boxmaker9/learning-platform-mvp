@@ -140,6 +140,8 @@ function buildAttemptGroups(attempts: AttemptRow[]): AttemptGroupSection[] {
 
   return list
 }
+
+export default async function AdminAttemptsHistoryPage({
   params,
   searchParams,
 }: {
