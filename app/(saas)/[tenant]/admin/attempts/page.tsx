@@ -13,6 +13,8 @@ type AttemptRow = {
   user_id: string
   problem_id: string
   problemTitle: string
+  problemGroupId: string | null
+  problemGroupTitle: string | null
 }
 
 type ProfileRow = {
@@ -42,25 +44,102 @@ function formatJaDate(iso: string) {
   }
 }
 
-/** PostgREST の embed が単一行でも配列でも返る場合に対応 */
-function joinProblemTitle(problems: unknown): string {
-  if (problems == null) return "（タイトル不明）"
-  if (Array.isArray(problems)) {
-    const first = problems[0]
-    if (first && typeof first === "object" && "title" in first) {
-      const t = (first as { title: unknown }).title
-      return typeof t === "string" && t.length > 0 ? t : "（タイトル不明）"
-    }
-    return "（タイトル不明）"
+/** PostgREST の 1:1 / N:1 embed が単体オブジェクトでも配列でも返る場合に先頭だけ取る */
+function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | null {
+  if (v == null) return null
+  if (Array.isArray(v)) {
+    const x = v[0]
+    return x && typeof x === "object" ? (x as T) : null
   }
-  if (typeof problems === "object" && "title" in problems) {
-    const t = (problems as { title: unknown }).title
-    return typeof t === "string" && t.length > 0 ? t : "（タイトル不明）"
-  }
-  return "（タイトル不明）"
+  if (typeof v === "object") return v as T
+  return null
 }
 
-export default async function AdminAttemptsHistoryPage({
+function parseProblemsJoin(problems: unknown): {
+  problemTitle: string
+  problemGroupId: string | null
+  problemGroupTitle: string | null
+} {
+  const row = firstRelationRow<{
+    title?: unknown
+    problem_group_id?: unknown
+    problem_groups?: unknown
+  }>(problems)
+
+  if (!row) {
+    return {
+      problemTitle: "（タイトル不明）",
+      problemGroupId: null,
+      problemGroupTitle: null,
+    }
+  }
+
+  const problemTitle =
+    typeof row.title === "string" && row.title.length > 0 ? row.title : "（タイトル不明）"
+
+  const gid =
+    typeof row.problem_group_id === "string" && row.problem_group_id.length > 0
+      ? row.problem_group_id
+      : null
+
+  const gRow = firstRelationRow<{ title?: unknown }>(row.problem_groups)
+  const problemGroupTitle =
+    gRow && typeof gRow.title === "string" && gRow.title.length > 0 ? gRow.title : null
+
+  return { problemTitle, problemGroupId: gid, problemGroupTitle }
+}
+
+const NO_GROUP_KEY = "__no_problem_group__"
+
+type AttemptGroupSection = {
+  key: string
+  groupId: string | null
+  heading: string
+  attempts: AttemptRow[]
+  latestIso: string
+}
+
+function buildAttemptGroups(attempts: AttemptRow[]): AttemptGroupSection[] {
+  const map = new Map<string, AttemptGroupSection>()
+
+  for (const a of attempts) {
+    const key = a.problemGroupId ?? NO_GROUP_KEY
+    let heading: string
+    if (!a.problemGroupId) {
+      heading = "大問に属さない小問"
+    } else if (a.problemGroupTitle) {
+      heading = a.problemGroupTitle
+    } else {
+      heading = "（大問情報の取得に失敗／削除済みの可能性）"
+    }
+
+    const existing = map.get(key)
+    if (existing) {
+      existing.attempts.push(a)
+      if (a.created_at > existing.latestIso) existing.latestIso = a.created_at
+    } else {
+      map.set(key, {
+        key,
+        groupId: a.problemGroupId,
+        heading,
+        attempts: [a],
+        latestIso: a.created_at,
+      })
+    }
+  }
+
+  const list = Array.from(map.values())
+  for (const g of list) {
+    g.attempts.sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }
+  list.sort((a, b) => {
+    if (a.key === NO_GROUP_KEY) return 1
+    if (b.key === NO_GROUP_KEY) return -1
+    return b.latestIso.localeCompare(a.latestIso)
+  })
+
+  return list
+}
   params,
   searchParams,
 }: {
@@ -151,7 +230,9 @@ export default async function AdminAttemptsHistoryPage({
 
   let attemptsQuery = supabase
     .from("problem_attempts")
-    .select("id, created_at, is_correct, user_id, problem_id, problems(title)")
+    .select(
+      "id, created_at, is_correct, user_id, problem_id, problems(title, problem_group_id, problem_groups(title))"
+    )
     .eq("organization_id", organization.id)
     .gte("created_at", sixMonthsAgoIso())
     .order("created_at", { ascending: false })
@@ -172,15 +253,20 @@ export default async function AdminAttemptsHistoryPage({
       problem_id: string
       problems: unknown
     }
+    const parsed = parseProblemsJoin(r.problems)
     return {
       id: r.id,
       created_at: r.created_at,
       is_correct: r.is_correct,
       user_id: r.user_id,
       problem_id: r.problem_id,
-      problemTitle: joinProblemTitle(r.problems),
+      problemTitle: parsed.problemTitle,
+      problemGroupId: parsed.problemGroupId,
+      problemGroupTitle: parsed.problemGroupTitle,
     }
   })
+
+  const attemptGroups = buildAttemptGroups(attempts)
 
   const graded = attempts.filter((a) => a.is_correct !== null && a.is_correct !== undefined)
   const correctCount = graded.filter((a) => a.is_correct === true).length
@@ -279,45 +365,69 @@ export default async function AdminAttemptsHistoryPage({
       <Card>
         <CardHeader>
           <CardTitle>履歴一覧</CardTitle>
-          <CardDescription>日時は日本時間（Asia/Tokyo）で表示しています。</CardDescription>
+          <CardDescription>
+            大問ごとに折りたたみできます。行をクリック（またはタップ）すると、その大問に含まれる小問の解答一覧が表示されます。日時は日本時間（Asia/Tokyo）です。
+          </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="space-y-3 overflow-x-auto">
           {attempts.length === 0 ? (
             <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
           ) : (
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
-                  <th className="py-2 pr-3">日時</th>
-                  <th className="py-2 pr-3">受講者</th>
-                  <th className="py-2 pr-3">小問</th>
-                  <th className="py-2">結果</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attempts.map((row) => {
-                  const title = row.problemTitle
-                  const mark =
-                    row.is_correct === true ? (
-                      <span className="font-medium text-emerald-700">正解</span>
-                    ) : row.is_correct === false ? (
-                      <span className="font-medium text-red-700">不正解</span>
-                    ) : (
-                      <span className="text-slate-400">—</span>
-                    )
-                  return (
-                    <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2 pr-3 whitespace-nowrap text-slate-700">
-                        {formatJaDate(row.created_at)}
-                      </td>
-                      <td className="py-2 pr-3 text-slate-800">{displayForUser(row.user_id)}</td>
-                      <td className="py-2 pr-3 text-slate-800">{title}</td>
-                      <td className="py-2">{mark}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            attemptGroups.map((section) => (
+              <details
+                key={section.key}
+                className="rounded-md border border-slate-200 bg-white open:shadow-sm"
+              >
+                <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50">
+                  <span className="inline-flex w-full items-center justify-between gap-3">
+                    <span className="min-w-0 flex-1 truncate">
+                      {section.heading}
+                      <span className="ml-2 font-normal text-slate-500">
+                        （{section.attempts.length} 件）
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-400">展開</span>
+                  </span>
+                </summary>
+                <div className="border-t border-slate-100 px-2 pb-3 pt-1">
+                  <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
+                        <th className="py-2 pr-3">日時</th>
+                        <th className="py-2 pr-3">受講者</th>
+                        <th className="py-2 pr-3">小問</th>
+                        <th className="py-2">結果</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.attempts.map((row) => {
+                        const title = row.problemTitle
+                        const mark =
+                          row.is_correct === true ? (
+                            <span className="font-medium text-emerald-700">正解</span>
+                          ) : row.is_correct === false ? (
+                            <span className="font-medium text-red-700">不正解</span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )
+                        return (
+                          <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                            <td className="py-2 pr-3 whitespace-nowrap text-slate-700">
+                              {formatJaDate(row.created_at)}
+                            </td>
+                            <td className="py-2 pr-3 text-slate-800">
+                              {displayForUser(row.user_id)}
+                            </td>
+                            <td className="py-2 pr-3 text-slate-800">{title}</td>
+                            <td className="py-2">{mark}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))
           )}
         </CardContent>
       </Card>
