@@ -13,9 +13,38 @@ type AttemptRow = {
   user_id: string
   problem_id: string
   problemTitle: string
+  problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
 }
+
+/** 大問の1回分（受講者が大問を通しで解いた単位） */
+type GroupAttemptSession = {
+  key: string
+  userId: string
+  groupId: string
+  groupTitle: string
+  /** 大問に取り組み始めた時刻（最初に送信した小問の日時） */
+  sessionAt: string
+  latestIso: string
+  attempts: AttemptRow[]
+}
+
+type StandaloneAttemptItem = {
+  kind: "standalone"
+  key: string
+  sortKey: string
+  attempt: AttemptRow
+}
+
+type GroupSessionListItem = {
+  kind: "group_session"
+  key: string
+  sortKey: string
+  session: GroupAttemptSession
+}
+
+type HistoryListItem = StandaloneAttemptItem | GroupSessionListItem
 
 type ProfileRow = {
   user_id: string
@@ -57,11 +86,13 @@ function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | nu
 
 function parseProblemsJoin(problems: unknown): {
   problemTitle: string
+  problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
 } {
   const row = firstRelationRow<{
     title?: unknown
+    position?: unknown
     problem_group_id?: unknown
     problem_groups?: unknown
   }>(problems)
@@ -69,6 +100,7 @@ function parseProblemsJoin(problems: unknown): {
   if (!row) {
     return {
       problemTitle: "（タイトル不明）",
+      problemPosition: 0,
       problemGroupId: null,
       problemGroupTitle: null,
     }
@@ -76,6 +108,9 @@ function parseProblemsJoin(problems: unknown): {
 
   const problemTitle =
     typeof row.title === "string" && row.title.length > 0 ? row.title : "（タイトル不明）"
+
+  const problemPosition =
+    typeof row.position === "number" && Number.isFinite(row.position) ? row.position : 0
 
   const gid =
     typeof row.problem_group_id === "string" && row.problem_group_id.length > 0
@@ -86,59 +121,103 @@ function parseProblemsJoin(problems: unknown): {
   const problemGroupTitle =
     gRow && typeof gRow.title === "string" && gRow.title.length > 0 ? gRow.title : null
 
-  return { problemTitle, problemGroupId: gid, problemGroupTitle }
+  return { problemTitle, problemPosition, problemGroupId: gid, problemGroupTitle }
 }
 
-const NO_GROUP_KEY = "__no_problem_group__"
+/**
+ * 同一ユーザー・同一大問の解答を「1回の挑戦」ごとに分割する。
+ * すでにその回に含まれる小問が再度送信されたら、新しい回として扱う。
+ */
+function clusterGroupAttemptsIntoSessions(rows: AttemptRow[]): GroupAttemptSession[] {
+  if (rows.length === 0) return []
 
-type AttemptGroupSection = {
-  key: string
-  groupId: string | null
-  heading: string
-  attempts: AttemptRow[]
-  latestIso: string
+  const sorted = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at))
+  const sessionBuckets: AttemptRow[][] = []
+
+  for (const attempt of sorted) {
+    let placed = false
+    for (let i = sessionBuckets.length - 1; i >= 0; i--) {
+      const bucket = sessionBuckets[i]
+      const hasProblem = bucket.some((x) => x.problem_id === attempt.problem_id)
+      if (!hasProblem) {
+        bucket.push(attempt)
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      sessionBuckets.push([attempt])
+    }
+  }
+
+  const userId = sorted[0].user_id
+  const groupId = sorted[0].problemGroupId!
+  const groupTitle =
+    sorted[0].problemGroupTitle ?? "（大問情報の取得に失敗／削除済みの可能性）"
+
+  return sessionBuckets.map((bucket, index) => {
+    const ordered = [...bucket].sort((a, b) => {
+      if (a.problemPosition !== b.problemPosition) {
+        return a.problemPosition - b.problemPosition
+      }
+      return a.created_at.localeCompare(b.created_at)
+    })
+    const sessionAt = ordered[0].created_at
+    const latestIso = ordered.reduce(
+      (max, a) => (a.created_at > max ? a.created_at : max),
+      ordered[0].created_at
+    )
+    return {
+      key: `${userId}:${groupId}:${sessionAt}:${index}`,
+      userId,
+      groupId,
+      groupTitle,
+      sessionAt,
+      latestIso,
+      attempts: ordered,
+    }
+  })
 }
 
-function buildAttemptGroups(attempts: AttemptRow[]): AttemptGroupSection[] {
-  const map = new Map<string, AttemptGroupSection>()
+function buildHistoryList(attempts: AttemptRow[]): HistoryListItem[] {
+  const groupByUserAndGroup = new Map<string, AttemptRow[]>()
+  const standalone: AttemptRow[] = []
 
   for (const a of attempts) {
-    const key = a.problemGroupId ?? NO_GROUP_KEY
-    let heading: string
-    if (!a.problemGroupId) {
-      heading = "大問に属さない小問"
-    } else if (a.problemGroupTitle) {
-      heading = a.problemGroupTitle
+    if (a.problemGroupId) {
+      const mapKey = `${a.user_id}:${a.problemGroupId}`
+      const list = groupByUserAndGroup.get(mapKey) ?? []
+      list.push(a)
+      groupByUserAndGroup.set(mapKey, list)
     } else {
-      heading = "（大問情報の取得に失敗／削除済みの可能性）"
+      standalone.push(a)
     }
+  }
 
-    const existing = map.get(key)
-    if (existing) {
-      existing.attempts.push(a)
-      if (a.created_at > existing.latestIso) existing.latestIso = a.created_at
-    } else {
-      map.set(key, {
-        key,
-        groupId: a.problemGroupId,
-        heading,
-        attempts: [a],
-        latestIso: a.created_at,
+  const items: HistoryListItem[] = []
+
+  for (const rows of groupByUserAndGroup.values()) {
+    for (const session of clusterGroupAttemptsIntoSessions(rows)) {
+      items.push({
+        kind: "group_session",
+        key: session.key,
+        sortKey: session.latestIso,
+        session,
       })
     }
   }
 
-  const list = Array.from(map.values())
-  for (const g of list) {
-    g.attempts.sort((a, b) => b.created_at.localeCompare(a.created_at))
+  for (const a of standalone) {
+    items.push({
+      kind: "standalone",
+      key: a.id,
+      sortKey: a.created_at,
+      attempt: a,
+    })
   }
-  list.sort((a, b) => {
-    if (a.key === NO_GROUP_KEY) return 1
-    if (b.key === NO_GROUP_KEY) return -1
-    return b.latestIso.localeCompare(a.latestIso)
-  })
 
-  return list
+  items.sort((a, b) => b.sortKey.localeCompare(a.sortKey))
+  return items
 }
 
 export default async function AdminAttemptsHistoryPage({
@@ -233,7 +312,7 @@ export default async function AdminAttemptsHistoryPage({
   let attemptsQuery = supabase
     .from("problem_attempts")
     .select(
-      "id, created_at, is_correct, user_id, problem_id, problems(title, problem_group_id, problem_groups(title))"
+      "id, created_at, is_correct, user_id, problem_id, problems(title, position, problem_group_id, problem_groups(title))"
     )
     .eq("organization_id", organization.id)
     .gte("created_at", sixMonthsAgoIso())
@@ -263,12 +342,14 @@ export default async function AdminAttemptsHistoryPage({
       user_id: r.user_id,
       problem_id: r.problem_id,
       problemTitle: parsed.problemTitle,
+      problemPosition: parsed.problemPosition,
       problemGroupId: parsed.problemGroupId,
       problemGroupTitle: parsed.problemGroupTitle,
     }
   })
 
-  const attemptGroups = buildAttemptGroups(attempts)
+  const historyItems = buildHistoryList(attempts)
+  const groupSessionCount = historyItems.filter((i) => i.kind === "group_session").length
 
   const graded = attempts.filter((a) => a.is_correct !== null && a.is_correct !== undefined)
   const correctCount = graded.filter((a) => a.is_correct === true).length
@@ -308,8 +389,9 @@ export default async function AdminAttemptsHistoryPage({
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold text-slate-500">解答回数（全形式）</p>
+            <p className="text-xs font-semibold text-slate-500">小問の送信回数</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">{attempts.length}</p>
+            <p className="mt-1 text-xs text-slate-500">大問の挑戦 {groupSessionCount} 回</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
             <p className="text-xs font-semibold text-slate-500">採点済み（択一・複数選択）</p>
@@ -368,68 +450,119 @@ export default async function AdminAttemptsHistoryPage({
         <CardHeader>
           <CardTitle>履歴一覧</CardTitle>
           <CardDescription>
-            大問ごとに折りたたみできます。行をクリック（またはタップ）すると、その大問に含まれる小問の解答一覧が表示されます。日時は日本時間（Asia/Tokyo）です。
+            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。展開すると小問の結果が見られます。大問の日時は挑戦開始時刻です。大問に属さない小問は1問ごとに日時を表示します。日時は日本時間（Asia/Tokyo）です。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 overflow-x-auto">
-          {attempts.length === 0 ? (
+          {historyItems.length === 0 ? (
             <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
           ) : (
-            attemptGroups.map((section) => (
-              <details
-                key={section.key}
-                className="rounded-md border border-slate-200 bg-white open:shadow-sm"
-              >
-                <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50">
-                  <span className="inline-flex w-full items-center justify-between gap-3">
-                    <span className="min-w-0 flex-1 truncate">
-                      {section.heading}
-                      <span className="ml-2 font-normal text-slate-500">
-                        （{section.attempts.length} 件）
+            historyItems.map((item) => {
+              if (item.kind === "standalone") {
+                const row = item.attempt
+                const mark =
+                  row.is_correct === true ? (
+                    <span className="font-medium text-emerald-700">正解</span>
+                  ) : row.is_correct === false ? (
+                    <span className="font-medium text-red-700">不正解</span>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )
+                return (
+                  <details
+                    key={item.key}
+                    className="rounded-md border border-slate-200 bg-white open:shadow-sm"
+                  >
+                    <summary className="cursor-pointer px-4 py-3 text-sm hover:bg-slate-50">
+                      <span className="inline-flex w-full flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium text-slate-900">
+                          {row.problemTitle}
+                          <span className="ml-2 font-normal text-slate-500">（単独小問）</span>
+                        </span>
+                        <span className="shrink-0 text-xs text-slate-600">
+                          {formatJaDate(row.created_at)}
+                          {!filterUserId ? (
+                            <span className="ml-2 text-slate-500">
+                              · {displayForUser(row.user_id)}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                    </summary>
+                    <div className="border-t border-slate-100 px-4 pb-3 pt-2">
+                      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                        {!filterUserId ? (
+                          <div>
+                            <dt className="text-xs font-semibold text-slate-500">受講者</dt>
+                            <dd className="text-slate-800">{displayForUser(row.user_id)}</dd>
+                          </div>
+                        ) : null}
+                        <div>
+                          <dt className="text-xs font-semibold text-slate-500">結果</dt>
+                          <dd>{mark}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </details>
+                )
+              }
+
+              const { session } = item
+              const showUser = !filterUserId
+              return (
+                <details
+                  key={item.key}
+                  className="rounded-md border border-slate-200 bg-white open:shadow-sm"
+                >
+                  <summary className="cursor-pointer px-4 py-3 text-sm hover:bg-slate-50">
+                    <span className="inline-flex w-full flex-wrap items-center justify-between gap-2">
+                      <span className="min-w-0 font-medium text-slate-900">
+                        {session.groupTitle}
+                        <span className="ml-2 font-normal text-slate-500">
+                          （小問 {session.attempts.length} 件）
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-600">
+                        {formatJaDate(session.sessionAt)}
+                        {showUser ? (
+                          <span className="ml-2 text-slate-500">
+                            · {displayForUser(session.userId)}
+                          </span>
+                        ) : null}
                       </span>
                     </span>
-                    <span className="shrink-0 text-xs text-slate-400">展開</span>
-                  </span>
-                </summary>
-                <div className="border-t border-slate-100 px-2 pb-3 pt-1">
-                  <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
-                        <th className="py-2 pr-3">日時</th>
-                        <th className="py-2 pr-3">受講者</th>
-                        <th className="py-2 pr-3">小問</th>
-                        <th className="py-2">結果</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {section.attempts.map((row) => {
-                        const title = row.problemTitle
-                        const mark =
-                          row.is_correct === true ? (
-                            <span className="font-medium text-emerald-700">正解</span>
-                          ) : row.is_correct === false ? (
-                            <span className="font-medium text-red-700">不正解</span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
+                  </summary>
+                  <div className="border-t border-slate-100 px-2 pb-3 pt-1">
+                    <table className="w-full min-w-[480px] border-collapse text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
+                          <th className="py-2 pr-3">小問</th>
+                          <th className="py-2">結果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {session.attempts.map((row) => {
+                          const mark =
+                            row.is_correct === true ? (
+                              <span className="font-medium text-emerald-700">正解</span>
+                            ) : row.is_correct === false ? (
+                              <span className="font-medium text-red-700">不正解</span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )
+                          return (
+                            <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                              <td className="py-2 pr-3 text-slate-800">{row.problemTitle}</td>
+                              <td className="py-2">{mark}</td>
+                            </tr>
                           )
-                        return (
-                          <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                            <td className="py-2 pr-3 whitespace-nowrap text-slate-700">
-                              {formatJaDate(row.created_at)}
-                            </td>
-                            <td className="py-2 pr-3 text-slate-800">
-                              {displayForUser(row.user_id)}
-                            </td>
-                            <td className="py-2 pr-3 text-slate-800">{title}</td>
-                            <td className="py-2">{mark}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            ))
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )
+            })
           )}
         </CardContent>
       </Card>
