@@ -273,3 +273,24 @@ with check (
   and user_id = auth.uid()
 );
 
+create index if not exists problem_attempts_org_created_at_idx
+  on public.problem_attempts (organization_id, created_at desc);
+
+create or replace function public.delete_problem_attempts_older_than_six_months()
+returns bigint
+language sql
+security definer
+set search_path = public
+as $$
+  with deleted as (
+    delete from public.problem_attempts
+    where created_at < (now() at time zone 'utc') - interval '6 months'
+    returning id
+  )
+  select count(*)::bigint from deleted;
+$$;
+
+revoke all on function public.delete_problem_attempts_older_than_six_months() from public;
+grant execute on function public.delete_problem_attempts_older_than_six_months() to postgres;
+grant execute on function public.delete_problem_attempts_older_than_six_months() to service_role;
+
