@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { X } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +50,40 @@ function userPickedOption(
     return Boolean(submitted.selectedOptionIds?.[optionId])
   }
   return false
+}
+
+function AnswerResultMark({ isCorrect }: { isCorrect: boolean | null | undefined }) {
+  if (isCorrect === true) {
+    return (
+      <span
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center"
+        role="img"
+        aria-label="正解"
+      >
+        <span className="select-none text-2xl font-light leading-none text-emerald-600">○</span>
+      </span>
+    )
+  }
+  if (isCorrect === false) {
+    return (
+      <span
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-red-600"
+        role="img"
+        aria-label="不正解"
+      >
+        <X className="h-6 w-6" strokeWidth={2.75} />
+      </span>
+    )
+  }
+  return (
+    <span
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-slate-300"
+      role="img"
+      aria-label="未解答"
+    >
+      <span className="select-none text-lg leading-none">—</span>
+    </span>
+  )
 }
 
 export default function GroupAttemptRunner({
@@ -114,8 +149,11 @@ export default function GroupAttemptRunner({
                   key={p.id}
                   className="border-b border-slate-200 pb-6 last:border-b-0 last:pb-0"
                 >
-                  <h3 className="text-base font-semibold text-slate-900">
-                    {i + 1}. {p.title}
+                  <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900">
+                    <AnswerResultMark isCorrect={row?.isCorrect} />
+                    <span>
+                      {i + 1}. {p.title}
+                    </span>
                   </h3>
                   {p.prompt ? (
                     <div className="mt-3 rounded-md border border-slate-100 bg-slate-50/80 px-3 py-2">
