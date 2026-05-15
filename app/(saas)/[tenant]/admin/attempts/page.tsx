@@ -73,6 +73,12 @@ function formatJaDate(iso: string) {
   }
 }
 
+function sessionScore(attempts: AttemptRow[]) {
+  const total = attempts.length
+  const correct = attempts.filter((a) => a.is_correct === true).length
+  return { correct, total }
+}
+
 /** PostgREST の 1:1 / N:1 embed が単体オブジェクトでも配列でも返る場合に先頭だけ取る */
 function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | null {
   if (v == null) return null
@@ -509,27 +515,35 @@ export default async function AdminAttemptsHistoryPage({
 
               const { session } = item
               const showUser = !filterUserId
+              const { correct, total } = sessionScore(session.attempts)
               return (
                 <details
                   key={item.key}
-                  className="rounded-md border border-slate-200 bg-white open:shadow-sm"
+                  className="group rounded-md border border-slate-200 bg-white open:shadow-sm"
                 >
-                  <summary className="cursor-pointer px-4 py-3 text-sm hover:bg-slate-50">
-                    <span className="inline-flex w-full flex-wrap items-center justify-between gap-2">
-                      <span className="min-w-0 font-medium text-slate-900">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                    <span
+                      className="shrink-0 text-xs text-slate-500 transition-transform group-open:rotate-180"
+                      aria-hidden
+                    >
+                      ▼
+                    </span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                      <span className="truncate font-medium text-slate-900">
                         {session.groupTitle}
-                        <span className="ml-2 font-normal text-slate-500">
-                          （小問 {session.attempts.length} 件）
+                      </span>
+                      <span className="shrink-0 text-slate-500">（{total}門）</span>
+                      <span className="shrink-0 font-medium tabular-nums text-slate-700">
+                        {correct}/{total}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-600">
+                      {formatJaDate(session.sessionAt)}
+                      {showUser ? (
+                        <span className="ml-2 text-slate-500">
+                          · {displayForUser(session.userId)}
                         </span>
-                      </span>
-                      <span className="shrink-0 text-xs text-slate-600">
-                        {formatJaDate(session.sessionAt)}
-                        {showUser ? (
-                          <span className="ml-2 text-slate-500">
-                            · {displayForUser(session.userId)}
-                          </span>
-                        ) : null}
-                      </span>
+                      ) : null}
                     </span>
                   </summary>
                   <div className="border-t border-slate-100 px-2 pb-3 pt-1">
