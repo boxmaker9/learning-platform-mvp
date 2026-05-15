@@ -196,7 +196,7 @@ function buildHistoryList(attempts: AttemptRow[]): HistoryListItem[] {
 
   const items: HistoryListItem[] = []
 
-  for (const rows of groupByUserAndGroup.values()) {
+  for (const rows of Array.from(groupByUserAndGroup.values())) {
     for (const session of clusterGroupAttemptsIntoSessions(rows)) {
       items.push({
         kind: "group_session",
