@@ -12,7 +12,7 @@ type AttemptRow = {
   is_correct: boolean | null
   user_id: string
   problem_id: string
-  problems: { title: string } | null
+  problemTitle: string
 }
 
 type ProfileRow = {
@@ -40,6 +40,24 @@ function formatJaDate(iso: string) {
   } catch {
     return iso
   }
+}
+
+/** PostgREST の embed が単一行でも配列でも返る場合に対応 */
+function joinProblemTitle(problems: unknown): string {
+  if (problems == null) return "（タイトル不明）"
+  if (Array.isArray(problems)) {
+    const first = problems[0]
+    if (first && typeof first === "object" && "title" in first) {
+      const t = (first as { title: unknown }).title
+      return typeof t === "string" && t.length > 0 ? t : "（タイトル不明）"
+    }
+    return "（タイトル不明）"
+  }
+  if (typeof problems === "object" && "title" in problems) {
+    const t = (problems as { title: unknown }).title
+    return typeof t === "string" && t.length > 0 ? t : "（タイトル不明）"
+  }
+  return "（タイトル不明）"
 }
 
 export default async function AdminAttemptsHistoryPage({
@@ -145,7 +163,24 @@ export default async function AdminAttemptsHistoryPage({
 
   const { data: attemptsRaw } = await attemptsQuery
 
-  const attempts = (attemptsRaw ?? []) as AttemptRow[]
+  const attempts: AttemptRow[] = (attemptsRaw ?? []).map((row) => {
+    const r = row as {
+      id: string
+      created_at: string
+      is_correct: boolean | null
+      user_id: string
+      problem_id: string
+      problems: unknown
+    }
+    return {
+      id: r.id,
+      created_at: r.created_at,
+      is_correct: r.is_correct,
+      user_id: r.user_id,
+      problem_id: r.problem_id,
+      problemTitle: joinProblemTitle(r.problems),
+    }
+  })
 
   const graded = attempts.filter((a) => a.is_correct !== null && a.is_correct !== undefined)
   const correctCount = graded.filter((a) => a.is_correct === true).length
@@ -261,7 +296,7 @@ export default async function AdminAttemptsHistoryPage({
               </thead>
               <tbody>
                 {attempts.map((row) => {
-                  const title = row.problems?.title ?? "（タイトル不明）"
+                  const title = row.problemTitle
                   const mark =
                     row.is_correct === true ? (
                       <span className="font-medium text-emerald-700">正解</span>
