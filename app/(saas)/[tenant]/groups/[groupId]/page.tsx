@@ -128,6 +128,7 @@ export default async function GroupAttemptPage({
       options: opts.map((o) => ({
         id: o.id,
         label: o.label,
+        isCorrect: Boolean(o.is_correct),
       })),
     }
   })

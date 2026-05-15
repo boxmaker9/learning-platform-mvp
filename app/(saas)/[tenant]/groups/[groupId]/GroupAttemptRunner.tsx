@@ -12,6 +12,8 @@ import ProblemAttemptForm from "../../problems/[problemId]/ProblemAttemptForm"
 type ProblemOption = {
   id: string
   label: string
+  /** 答え合わせ一覧で正解マークに使う（受講フォームでは未使用でも可） */
+  isCorrect?: boolean
 }
 
 export type GroupProblem = {
@@ -32,6 +34,21 @@ type StoredAnswer = {
     selectedOptionId: string
     selectedOptionIds: Record<string, boolean>
   }
+}
+
+function userPickedOption(
+  type: GroupProblem["type"],
+  optionId: string,
+  submitted?: StoredAnswer["submittedValues"]
+): boolean {
+  if (!submitted) return false
+  if (type === "single_choice") {
+    return submitted.selectedOptionId === optionId
+  }
+  if (type === "multiple_choice") {
+    return Boolean(submitted.selectedOptionIds?.[optionId])
+  }
+  return false
 }
 
 export default function GroupAttemptRunner({
@@ -100,6 +117,40 @@ export default function GroupAttemptRunner({
                   <h3 className="text-base font-semibold text-slate-900">
                     {i + 1}. {p.title}
                   </h3>
+                  {p.prompt ? (
+                    <div className="mt-3 rounded-md border border-slate-100 bg-slate-50/80 px-3 py-2">
+                      <p className="mb-1 text-xs font-semibold text-slate-500">問題文</p>
+                      <p className="whitespace-pre-wrap text-sm text-slate-800">{p.prompt}</p>
+                    </div>
+                  ) : null}
+                  {p.type !== "text" && p.options.length > 0 ? (
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-xs font-semibold text-slate-500">選択肢</p>
+                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-800">
+                        {p.options.map((opt) => {
+                          const picked = userPickedOption(p.type, opt.id, row?.submittedValues)
+                          const isModel = Boolean(opt.isCorrect)
+                          return (
+                            <li key={opt.id} className="pl-1 marker:font-normal">
+                              <span className="whitespace-pre-wrap">{opt.label}</span>
+                              <span className="ml-2 inline-flex flex-wrap gap-1.5 align-middle">
+                                {isModel ? (
+                                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
+                                    正解
+                                  </span>
+                                ) : null}
+                                {picked ? (
+                                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-700">
+                                    あなたの選択
+                                  </span>
+                                ) : null}
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    </div>
+                  ) : null}
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
                       <p className="mb-1 text-xs font-semibold text-slate-500">あなたの解答</p>
