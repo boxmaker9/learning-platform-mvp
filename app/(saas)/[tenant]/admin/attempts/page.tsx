@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import AttemptSubQuestionRow from "./AttemptSubQuestionRow"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -17,7 +18,10 @@ type AttemptRow = {
   problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
+  problemPrompt: string | null
   answerText: string | null
+  selectedOptionIds: string[]
+  userAnswerDisplay: string
 }
 
 /** 大問の1回分（受講者が大問を通しで解いた単位） */
@@ -86,17 +90,25 @@ function formatTextAnswer(answerText: string | null) {
   return t.length > 0 ? t : "（未入力）"
 }
 
-function attemptResultMark(row: AttemptRow) {
-  if (row.is_correct === true) {
-    return <span className="font-medium text-emerald-700">正解</span>
+function buildUserAnswerDisplay(
+  problemType: AttemptRow["problemType"],
+  answerText: string | null,
+  selectedOptionIds: string[],
+  optionLabelById: Map<string, string>
+): string {
+  if (problemType === "text") {
+    return formatTextAnswer(answerText)
   }
-  if (row.is_correct === false) {
-    return <span className="font-medium text-red-700">不正解</span>
+  if (selectedOptionIds.length === 0) {
+    return "（未選択）"
   }
-  return <span className="text-slate-400">—</span>
+  const labels = selectedOptionIds
+    .map((id) => optionLabelById.get(id))
+    .filter((label): label is string => Boolean(label))
+  return labels.length > 0 ? labels.join("・") : "（不明）"
 }
 
-/** PostgREST の 1:1 / N:1 embed が単体オブジェクトでも配列でも返る場合に先頭だけ取る */
+
 function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | null {
   if (v == null) return null
   if (Array.isArray(v)) {
@@ -113,11 +125,13 @@ function parseProblemsJoin(problems: unknown): {
   problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
+  problemPrompt: string | null
 } {
   const row = firstRelationRow<{
     title?: unknown
     type?: unknown
     position?: unknown
+    prompt?: unknown
     problem_group_id?: unknown
     problem_groups?: unknown
   }>(problems)
@@ -129,6 +143,7 @@ function parseProblemsJoin(problems: unknown): {
       problemPosition: 0,
       problemGroupId: null,
       problemGroupTitle: null,
+      problemPrompt: null,
     }
   }
 
@@ -143,6 +158,8 @@ function parseProblemsJoin(problems: unknown): {
   const problemPosition =
     typeof row.position === "number" && Number.isFinite(row.position) ? row.position : 0
 
+  const problemPrompt = typeof row.prompt === "string" ? row.prompt : null
+
   const gid =
     typeof row.problem_group_id === "string" && row.problem_group_id.length > 0
       ? row.problem_group_id
@@ -152,7 +169,14 @@ function parseProblemsJoin(problems: unknown): {
   const problemGroupTitle =
     gRow && typeof gRow.title === "string" && gRow.title.length > 0 ? gRow.title : null
 
-  return { problemTitle, problemType, problemPosition, problemGroupId: gid, problemGroupTitle }
+  return {
+    problemTitle,
+    problemType,
+    problemPosition,
+    problemGroupId: gid,
+    problemGroupTitle,
+    problemPrompt,
+  }
 }
 
 /**
@@ -343,7 +367,7 @@ export default async function AdminAttemptsHistoryPage({
   let attemptsQuery = supabase
     .from("problem_attempts")
     .select(
-      "id, created_at, is_correct, user_id, problem_id, answer_text, problems(title, type, position, problem_group_id, problem_groups(title))"
+      "id, created_at, is_correct, user_id, problem_id, answer_text, selected_option_ids, problems(title, type, position, prompt, problem_group_id, problem_groups(title))"
     )
     .eq("organization_id", organization.id)
     .gte("created_at", sixMonthsAgoIso())
@@ -356,7 +380,7 @@ export default async function AdminAttemptsHistoryPage({
 
   const { data: attemptsRaw } = await attemptsQuery
 
-  const attempts: AttemptRow[] = (attemptsRaw ?? []).map((row) => {
+  const attemptsBase: Omit<AttemptRow, "userAnswerDisplay">[] = (attemptsRaw ?? []).map((row) => {
     const r = row as {
       id: string
       created_at: string
@@ -364,9 +388,13 @@ export default async function AdminAttemptsHistoryPage({
       user_id: string
       problem_id: string
       answer_text: string | null
+      selected_option_ids: string[] | null
       problems: unknown
     }
     const parsed = parseProblemsJoin(r.problems)
+    const selectedOptionIds = Array.isArray(r.selected_option_ids)
+      ? r.selected_option_ids.filter((id): id is string => typeof id === "string")
+      : []
     return {
       id: r.id,
       created_at: r.created_at,
@@ -378,9 +406,38 @@ export default async function AdminAttemptsHistoryPage({
       problemPosition: parsed.problemPosition,
       problemGroupId: parsed.problemGroupId,
       problemGroupTitle: parsed.problemGroupTitle,
+      problemPrompt: parsed.problemPrompt,
       answerText: r.answer_text,
+      selectedOptionIds,
     }
   })
+
+  const allOptionIds = Array.from(
+    new Set(attemptsBase.flatMap((a) => a.selectedOptionIds))
+  )
+  const optionLabelById = new Map<string, string>()
+  if (allOptionIds.length > 0) {
+    const { data: optionsRaw } = await supabase
+      .from("problem_options")
+      .select("id, label")
+      .in("id", allOptionIds)
+    for (const opt of optionsRaw ?? []) {
+      const o = opt as { id: string; label: string }
+      if (o.id && o.label) {
+        optionLabelById.set(o.id, o.label)
+      }
+    }
+  }
+
+  const attempts: AttemptRow[] = attemptsBase.map((a) => ({
+    ...a,
+    userAnswerDisplay: buildUserAnswerDisplay(
+      a.problemType,
+      a.answerText,
+      a.selectedOptionIds,
+      optionLabelById
+    ),
+  }))
 
   const historyItems = buildHistoryList(attempts)
   const groupSessionCount = historyItems.filter((i) => i.kind === "group_session").length
@@ -484,7 +541,7 @@ export default async function AdminAttemptsHistoryPage({
         <CardHeader>
           <CardTitle>履歴一覧</CardTitle>
           <CardDescription>
-            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。展開すると小問の結果が見られます。大問の日時は挑戦開始時刻です。大問に属さない小問は1問ごとに日時を表示します。日時は日本時間（Asia/Tokyo）です。
+            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。展開すると小問ごとに正誤が見られ、小問をさらに展開すると問題文と解答が確認できます。大問の日時は挑戦開始時刻です。大問に属さない小問は1問ごとに日時を表示します。日時は日本時間（Asia/Tokyo）です。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 overflow-x-auto">
@@ -495,49 +552,28 @@ export default async function AdminAttemptsHistoryPage({
               if (item.kind === "standalone") {
                 const row = item.attempt
                 return (
-                  <details
+                  <div
                     key={item.key}
-                    className="rounded-md border border-slate-200 bg-white open:shadow-sm"
+                    className="rounded-md border border-slate-200 bg-white px-3 py-2"
                   >
-                    <summary className="cursor-pointer px-4 py-3 text-sm hover:bg-slate-50">
-                      <span className="inline-flex w-full flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium text-slate-900">
-                          {row.problemTitle}
-                          <span className="ml-2 font-normal text-slate-500">（単独小問）</span>
-                        </span>
-                        <span className="shrink-0 text-xs text-slate-600">
-                          {formatJaDate(row.created_at)}
-                          {!filterUserId ? (
-                            <span className="ml-2 text-slate-500">
-                              · {displayForUser(row.user_id)}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                    </summary>
-                    <div className="border-t border-slate-100 px-4 pb-3 pt-2">
-                      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                      <span className="font-medium text-slate-500">単独小問</span>
+                      <span>
+                        {formatJaDate(row.created_at)}
                         {!filterUserId ? (
-                          <div>
-                            <dt className="text-xs font-semibold text-slate-500">受講者</dt>
-                            <dd className="text-slate-800">{displayForUser(row.user_id)}</dd>
-                          </div>
+                          <span className="ml-2 text-slate-500">
+                            · {displayForUser(row.user_id)}
+                          </span>
                         ) : null}
-                        <div>
-                          <dt className="text-xs font-semibold text-slate-500">結果</dt>
-                          <dd>{attemptResultMark(row)}</dd>
-                        </div>
-                        {row.problemType === "text" ? (
-                          <div className={filterUserId ? "sm:col-span-2" : "sm:col-span-2"}>
-                            <dt className="text-xs font-semibold text-slate-500">記述解答</dt>
-                            <dd className="whitespace-pre-wrap text-slate-800">
-                              {formatTextAnswer(row.answerText)}
-                            </dd>
-                          </div>
-                        ) : null}
-                      </dl>
+                      </span>
                     </div>
-                  </details>
+                    <AttemptSubQuestionRow
+                      title={row.problemTitle}
+                      problemPrompt={row.problemPrompt}
+                      userAnswerDisplay={row.userAnswerDisplay}
+                      isCorrect={row.is_correct}
+                    />
+                  </div>
                 )
               }
 
@@ -574,33 +610,16 @@ export default async function AdminAttemptsHistoryPage({
                       ) : null}
                     </span>
                   </summary>
-                  <div className="border-t border-slate-100 px-2 pb-3 pt-1">
-                    <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
-                          <th className="py-2 pr-3">小問</th>
-                          <th className="py-2 pr-3">結果</th>
-                          <th className="py-2">記述解答</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {session.attempts.map((row) => (
-                          <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                            <td className="py-2 pr-3 text-slate-800">{row.problemTitle}</td>
-                            <td className="py-2 pr-3">{attemptResultMark(row)}</td>
-                            <td className="py-2 text-slate-800">
-                              {row.problemType === "text" ? (
-                                <span className="whitespace-pre-wrap">
-                                  {formatTextAnswer(row.answerText)}
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-2 border-t border-slate-100 px-2 pb-3 pt-2">
+                    {session.attempts.map((row) => (
+                      <AttemptSubQuestionRow
+                        key={row.id}
+                        title={row.problemTitle}
+                        problemPrompt={row.problemPrompt}
+                        userAnswerDisplay={row.userAnswerDisplay}
+                        isCorrect={row.is_correct}
+                      />
+                    ))}
                   </div>
                 </details>
               )

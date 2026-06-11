@@ -11,6 +11,67 @@ const createUserSchema = z.object({
   password: z.string().min(8),
 })
 
+async function requireAdmin(tenant: string) {
+  const supabase = createSupabaseServerClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) {
+    return { error: NextResponse.json({ message: "認証が必要です。" }, { status: 401 }) }
+  }
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", tenant)
+    .single()
+
+  if (!organization) {
+    return { error: NextResponse.json({ message: "テナントが見つかりません。" }, { status: 404 }) }
+  }
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organization.id)
+    .eq("user_id", userData.user.id)
+    .single()
+
+  if (!membership || membership.role !== "admin") {
+    return { error: NextResponse.json({ message: "権限がありません。" }, { status: 403 }) }
+  }
+
+  return { organization }
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: { tenant: string } }
+) {
+  const auth = await requireAdmin(params.tenant)
+  if ("error" in auth && auth.error) return auth.error
+
+  const supabase = createSupabaseServerClient()
+  const { data: members } = await supabase
+    .from("organization_members")
+    .select("user_id, created_at")
+    .eq("organization_id", auth.organization.id)
+    .eq("role", "student")
+    .order("created_at", { ascending: false })
+
+  const userIds = (members ?? []).map((m) => m.user_id).filter(Boolean)
+  if (userIds.length === 0) {
+    return NextResponse.json({ users: [] })
+  }
+
+  const { data: profiles } = await supabase
+    .from("user_profiles")
+    .select("user_id, login_id, display_name, initial_password, created_at")
+    .eq("organization_id", auth.organization.id)
+    .in("user_id", userIds)
+    .order("created_at", { ascending: false })
+
+  return NextResponse.json({ users: profiles ?? [] })
+}
+
 export async function POST(
   request: Request,
   { params }: { params: { tenant: string } }
@@ -31,26 +92,9 @@ export async function POST(
     return NextResponse.json({ message: "認証が必要です。" }, { status: 401 })
   }
 
-  const { data: organization } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("slug", params.tenant)
-    .single()
-
-  if (!organization) {
-    return NextResponse.json({ message: "テナントが見つかりません。" }, { status: 404 })
-  }
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("role")
-    .eq("organization_id", organization.id)
-    .eq("user_id", userData.user.id)
-    .single()
-
-  if (!membership || membership.role !== "admin") {
-    return NextResponse.json({ message: "権限がありません。" }, { status: 403 })
-  }
+  const auth = await requireAdmin(params.tenant)
+  if ("error" in auth && auth.error) return auth.error
+  const organization = auth.organization
 
   const loginId = normalizeLoginId(parsed.data.loginId)
   if (!isValidLoginId(loginId)) {
@@ -96,6 +140,7 @@ export async function POST(
     user_id: newUserId,
     login_id: loginId,
     display_name: parsed.data.displayName?.trim() || null,
+    initial_password: parsed.data.password,
   })
 
   if (profileError) {

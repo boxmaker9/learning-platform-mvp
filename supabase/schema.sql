@@ -37,6 +37,7 @@ create table public.user_profiles (
   user_id uuid not null references auth.users(id) on delete cascade,
   login_id text not null,
   display_name text,
+  initial_password text,
   created_at timestamptz not null default now(),
   unique (organization_id, login_id),
   unique (organization_id, user_id)

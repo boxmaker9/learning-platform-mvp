@@ -11,6 +11,7 @@ const adminItems = [
   { label: "大問作成", href: "admin/groups/new" },
   { label: "小問作成", href: "admin/problems/new" },
   { label: "解答履歴", href: "admin/attempts" },
+  { label: "受講者一覧", href: "admin/users" },
   { label: "受講者作成", href: "admin/users/new" },
 ]
 
@@ -103,9 +104,6 @@ export default async function TenantLayout({
                   </Link>
                 </Button>
               ))}
-              <Button asChild variant="ghost" className="w-full justify-start">
-                <Link href={`/${params.tenant}`}>受講者トップ</Link>
-              </Button>
               <LogoutButton />
             </nav>
           </aside>

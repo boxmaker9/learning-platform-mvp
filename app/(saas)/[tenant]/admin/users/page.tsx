@@ -1,0 +1,167 @@
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
+
+import UserPasswordField from "./UserPasswordField"
+
+type StudentUser = {
+  user_id: string
+  login_id: string
+  display_name: string | null
+  initial_password: string | null
+  created_at: string
+}
+
+function formatJaDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+  } catch {
+    return iso
+  }
+}
+
+export default async function AdminUsersPage({
+  params,
+}: {
+  params: { tenant: string }
+}) {
+  const supabase = createSupabaseServerClient()
+  const { data: userData } = await supabase.auth.getUser()
+
+  if (!userData.user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>受講者一覧</CardTitle>
+          <CardDescription>ログインが必要です。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link className="text-sm font-medium text-primary-600 hover:underline" href="/login">
+            ログインへ
+          </Link>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .eq("slug", params.tenant)
+    .single()
+
+  if (!organization) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>受講者一覧</CardTitle>
+          <CardDescription>テナントが見つかりません。</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", organization.id)
+    .eq("user_id", userData.user.id)
+    .single()
+
+  if (!membership || membership.role !== "admin") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>受講者一覧</CardTitle>
+          <CardDescription>管理者のみアクセスできます。</CardDescription>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  const { data: members } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organization.id)
+    .eq("role", "student")
+
+  const userIds = (members ?? []).map((m) => m.user_id).filter(Boolean)
+
+  let users: StudentUser[] = []
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("user_id, login_id, display_name, initial_password, created_at")
+      .eq("organization_id", organization.id)
+      .in("user_id", userIds)
+      .order("created_at", { ascending: false })
+    users = (profiles ?? []) as StudentUser[]
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>受講者一覧</CardTitle>
+          <CardDescription>
+            {organization.name} の受講者アカウントです。ログインIDと作成時に設定した初期パスワードを確認できます。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">
+            パスワードは目のアイコンで表示できます。作成以前のユーザーは「（未保存）」と表示されます。
+          </p>
+          <Button asChild>
+            <Link href={`/${params.tenant}/admin/users/new`}>受講者を作成</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>アカウント</CardTitle>
+          <CardDescription>全 {users.length} 件</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          {users.length === 0 ? (
+            <p className="text-sm text-slate-500">まだ受講者がいません。</p>
+          ) : (
+            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
+                  <th className="py-2 pr-3">ログインID</th>
+                  <th className="py-2 pr-3">表示名</th>
+                  <th className="py-2 pr-3">パスワード</th>
+                  <th className="py-2">作成日</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.user_id} className="border-b border-slate-100 last:border-0">
+                    <td className="py-2 pr-3 font-mono text-slate-800">{user.login_id}</td>
+                    <td className="py-2 pr-3 text-slate-800">
+                      {user.display_name?.trim() ? user.display_name : "—"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <UserPasswordField password={user.initial_password} />
+                    </td>
+                    <td className="py-2 whitespace-nowrap text-slate-600">
+                      {formatJaDate(user.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
