@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import AttemptHistoryList, { type HistoryListEntry } from "./AttemptHistoryList"
+import AttemptHistorySection, { type HistoryListEntry } from "./AttemptHistoryList"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -594,17 +594,7 @@ export default async function AdminAttemptsHistoryPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>履歴一覧</CardTitle>
-          <CardDescription>
-            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。チェックを付けて「履歴削除」でサーバーから削除できます。大問を選ぶとその回の小問すべてが削除されます。日時は日本時間（Asia/Tokyo）です。
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <AttemptHistoryList tenant={params.tenant} entries={historyEntries} />
-        </CardContent>
-      </Card>
+      <AttemptHistorySection tenant={params.tenant} entries={historyEntries} />
     </div>
   )
 }

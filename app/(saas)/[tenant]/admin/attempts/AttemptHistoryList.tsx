@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 import AttemptSubQuestionRow from "./AttemptSubQuestionRow"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 
 export type HistorySubQuestion = {
@@ -29,7 +30,7 @@ export type HistoryListEntry = {
   standaloneDate?: string
 }
 
-type AttemptHistoryListProps = {
+type AttemptHistorySectionProps = {
   tenant: string
   entries: HistoryListEntry[]
 }
@@ -39,8 +40,9 @@ function stopToggle(event: React.MouseEvent) {
   event.stopPropagation()
 }
 
-export default function AttemptHistoryList({ tenant, entries }: AttemptHistoryListProps) {
+export default function AttemptHistorySection({ tenant, entries }: AttemptHistorySectionProps) {
   const router = useRouter()
+  const [selectionMode, setSelectionMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -58,6 +60,11 @@ export default function AttemptHistoryList({ tenant, entries }: AttemptHistoryLi
     }
     return Array.from(ids)
   }, [entries, selectedKeys])
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false)
+    setSelectedKeys(new Set())
+  }
 
   const toggleKey = (key: string, checked: boolean) => {
     setSelectedKeys((prev) => {
@@ -98,7 +105,7 @@ export default function AttemptHistoryList({ tenant, entries }: AttemptHistoryLi
         throw new Error(payload.detail ?? payload.message ?? "削除に失敗しました。")
       }
 
-      setSelectedKeys(new Set())
+      exitSelectionMode()
       router.refresh()
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "削除に失敗しました。")
@@ -107,119 +114,162 @@ export default function AttemptHistoryList({ tenant, entries }: AttemptHistoryLi
     }
   }
 
-  if (entries.length === 0) {
-    return <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
-  }
-
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => toggleAll(checked === true)}
-            aria-label="すべて選択"
-          />
-          すべて選択
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-slate-600">{selectedKeys.size} 件選択中</span>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={selectedKeys.size === 0 || isDeleting}
-            onClick={() => void onDelete()}
-          >
-            {isDeleting ? "削除中..." : "履歴削除"}
-          </Button>
+    <Card>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+        <div className="space-y-1">
+          <CardTitle>履歴一覧</CardTitle>
+          <CardDescription>
+            大問は「1回の挑戦」ごとに1行表示します。「履歴削除」を押すと選択モードになり、個別または複数の履歴を選んで削除できます。大問を選ぶとその回の小問すべてが削除されます。日時は日本時間（Asia/Tokyo）です。
+          </CardDescription>
         </div>
-      </div>
-
-      {entries.map((entry) => {
-        const checked = selectedKeys.has(entry.key)
-
-        if (entry.kind === "standalone") {
-          const row = entry.subQuestions[0]
-          return (
-            <div
-              key={entry.key}
-              className="rounded-md border border-slate-200 bg-white px-3 py-2"
-            >
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <label className="flex items-center gap-2 text-xs text-slate-600">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(value) => toggleKey(entry.key, value === true)}
-                    aria-label={`${entry.deleteLabel} を選択`}
-                  />
-                  <span className="font-medium text-slate-500">単独小問</span>
-                </label>
-                <span className="text-xs text-slate-600">
-                  {entry.standaloneDate}
-                  {entry.userLabel ? (
-                    <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
-                  ) : null}
-                </span>
-              </div>
-              {row ? (
-                <AttemptSubQuestionRow
-                  title={row.title}
-                  problemPrompt={row.problemPrompt}
-                  userAnswerDisplay={row.userAnswerDisplay}
-                  isCorrect={row.isCorrect}
-                />
-              ) : null}
-            </div>
-          )
-        }
-
-        return (
-          <details
-            key={entry.key}
-            className="group rounded-md border border-slate-200 bg-white open:shadow-sm"
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-              <span onClick={stopToggle} onKeyDown={(e) => e.stopPropagation()}>
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={(value) => toggleKey(entry.key, value === true)}
-                  aria-label={`${entry.deleteLabel} を選択`}
-                />
-              </span>
-              <span
-                className="shrink-0 text-xs text-slate-500 transition-transform group-open:rotate-180"
-                aria-hidden
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {selectionMode ? (
+            <>
+              <Button type="button" variant="secondary" onClick={exitSelectionMode} disabled={isDeleting}>
+                キャンセル
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={selectedKeys.size === 0 || isDeleting}
+                onClick={() => void onDelete()}
               >
-                ▼
-              </span>
-              <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                <span className="truncate font-medium text-slate-900">{entry.groupTitle}</span>
-                <span className="shrink-0 text-slate-500">（{entry.scoreTotal}門）</span>
-                <span className="shrink-0 font-medium tabular-nums text-slate-700">
-                  {entry.scoreCorrect}/{entry.scoreTotal}
-                </span>
-              </span>
-              <span className="shrink-0 text-xs text-slate-600">
-                {entry.sessionDate}
-                {entry.userLabel ? (
-                  <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
-                ) : null}
-              </span>
-            </summary>
-            <div className="space-y-2 border-t border-slate-100 px-2 pb-3 pt-2">
-              {entry.subQuestions.map((row) => (
-                <AttemptSubQuestionRow
-                  key={row.id}
-                  title={row.title}
-                  problemPrompt={row.problemPrompt}
-                  userAnswerDisplay={row.userAnswerDisplay}
-                  isCorrect={row.isCorrect}
-                />
-              ))}
-            </div>
-          </details>
-        )
-      })}
-    </div>
+                {isDeleting ? "削除中..." : `削除する（${selectedKeys.size}）`}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              className="border border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+              disabled={entries.length === 0}
+              onClick={() => setSelectionMode(true)}
+            >
+              履歴削除
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        {entries.length === 0 ? (
+          <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
+        ) : (
+          <div className="space-y-3">
+            {selectionMode ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-md border border-red-100 bg-red-50/50 px-3 py-2">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={(checked) => toggleAll(checked === true)}
+                    aria-label="すべて選択"
+                  />
+                  すべて選択
+                </label>
+                <span className="text-sm text-slate-600">{selectedKeys.size} 件選択中</span>
+              </div>
+            ) : null}
+
+            {entries.map((entry) => {
+              const checked = selectedKeys.has(entry.key)
+
+              if (entry.kind === "standalone") {
+                const row = entry.subQuestions[0]
+                return (
+                  <div
+                    key={entry.key}
+                    className={
+                      selectionMode && checked
+                        ? "rounded-md border border-red-200 bg-red-50/30 px-3 py-2"
+                        : "rounded-md border border-slate-200 bg-white px-3 py-2"
+                    }
+                  >
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                        {selectionMode ? (
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => toggleKey(entry.key, value === true)}
+                            aria-label={`${entry.deleteLabel} を選択`}
+                          />
+                        ) : null}
+                        <span className="font-medium text-slate-500">単独小問</span>
+                      </div>
+                      <span className="text-xs text-slate-600">
+                        {entry.standaloneDate}
+                        {entry.userLabel ? (
+                          <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
+                        ) : null}
+                      </span>
+                    </div>
+                    {row ? (
+                      <AttemptSubQuestionRow
+                        title={row.title}
+                        problemPrompt={row.problemPrompt}
+                        userAnswerDisplay={row.userAnswerDisplay}
+                        isCorrect={row.isCorrect}
+                      />
+                    ) : null}
+                  </div>
+                )
+              }
+
+              return (
+                <details
+                  key={entry.key}
+                  className={
+                    selectionMode && checked
+                      ? "group rounded-md border border-red-200 bg-red-50/30 open:shadow-sm"
+                      : "group rounded-md border border-slate-200 bg-white open:shadow-sm"
+                  }
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                    {selectionMode ? (
+                      <span onClick={stopToggle} onKeyDown={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => toggleKey(entry.key, value === true)}
+                          aria-label={`${entry.deleteLabel} を選択`}
+                        />
+                      </span>
+                    ) : null}
+                    <span
+                      className="shrink-0 text-xs text-slate-500 transition-transform group-open:rotate-180"
+                      aria-hidden
+                    >
+                      ▼
+                    </span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                      <span className="truncate font-medium text-slate-900">{entry.groupTitle}</span>
+                      <span className="shrink-0 text-slate-500">（{entry.scoreTotal}門）</span>
+                      <span className="shrink-0 font-medium tabular-nums text-slate-700">
+                        {entry.scoreCorrect}/{entry.scoreTotal}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-600">
+                      {entry.sessionDate}
+                      {entry.userLabel ? (
+                        <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
+                      ) : null}
+                    </span>
+                  </summary>
+                  <div className="space-y-2 border-t border-slate-100 px-2 pb-3 pt-2">
+                    {entry.subQuestions.map((row) => (
+                      <AttemptSubQuestionRow
+                        key={row.id}
+                        title={row.title}
+                        problemPrompt={row.problemPrompt}
+                        userAnswerDisplay={row.userAnswerDisplay}
+                        isCorrect={row.isCorrect}
+                      />
+                    ))}
+                  </div>
+                </details>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
