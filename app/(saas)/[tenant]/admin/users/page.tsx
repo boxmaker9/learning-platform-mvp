@@ -100,9 +100,14 @@ export default async function AdminUsersPage({
           <p className="text-sm text-slate-600">
             メールで登録した管理者はログインIDの代わりにメールアドレスを表示します。パスワードは目のアイコンで表示できます。
           </p>
-          <Button asChild>
-            <Link href={`/${params.tenant}/admin/users/new`}>受講者を作成</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="secondary">
+              <Link href={`/${params.tenant}/admin/users/new`}>受講者を作成</Link>
+            </Button>
+            <Button asChild>
+              <Link href={`/${params.tenant}/admin/users/new-admin`}>管理者を作成</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

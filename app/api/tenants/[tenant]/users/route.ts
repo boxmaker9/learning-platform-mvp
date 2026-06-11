@@ -10,6 +10,7 @@ const createUserSchema = z.object({
   loginId: z.string().min(3).max(32),
   displayName: z.string().max(64).optional(),
   password: z.string().min(8),
+  role: z.enum(["admin", "student"]).optional().default("student"),
 })
 
 async function requireAdmin(tenant: string) {
@@ -138,7 +139,7 @@ export async function POST(
   const { error: memberError } = await admin.from("organization_members").insert({
     organization_id: organization.id,
     user_id: newUserId,
-    role: "student",
+    role: parsed.data.role,
   })
 
   if (memberError) {
@@ -153,6 +154,7 @@ export async function POST(
   return NextResponse.json({
     success: true,
     loginId,
+    role: parsed.data.role,
     tenant: params.tenant,
   })
 }

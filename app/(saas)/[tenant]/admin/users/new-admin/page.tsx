@@ -4,7 +4,7 @@ import { useParams } from "next/navigation"
 
 import UserCreateForm from "../UserCreateForm"
 
-export default function AdminUserCreatePage() {
+export default function AdminAdminCreatePage() {
   const params = useParams()
   const tenant =
     typeof params.tenant === "string"
@@ -16,9 +16,9 @@ export default function AdminUserCreatePage() {
   return (
     <UserCreateForm
       tenant={tenant}
-      role="student"
-      title="受講者作成"
-      description="テナント内でユニークなログインIDとパスワードで受講者を作成します。"
+      role="admin"
+      title="管理者作成"
+      description="テナント内でユニークなログインIDとパスワードで管理者を作成します。作成後はログイン画面から同じテナント・ログインIDで管理画面に入れます。"
     />
   )
 }

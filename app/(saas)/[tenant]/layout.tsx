@@ -13,6 +13,7 @@ const adminItems = [
   { label: "解答履歴", href: "admin/attempts" },
   { label: "ユーザー一覧", href: "admin/users" },
   { label: "受講者作成", href: "admin/users/new" },
+  { label: "管理者作成", href: "admin/users/new-admin" },
 ]
 
 const studentItems = [
