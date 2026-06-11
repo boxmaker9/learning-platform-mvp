@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { normalizeLoginId, authEmailFromLoginId, isValidLoginId } from "@/lib/auth/loginId"
+import { listOrganizationUsers } from "@/lib/admin/listOrganizationUsers"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
@@ -49,27 +50,9 @@ export async function GET(
   const auth = await requireAdmin(params.tenant)
   if ("error" in auth && auth.error) return auth.error
 
-  const supabase = createSupabaseServerClient()
-  const { data: members } = await supabase
-    .from("organization_members")
-    .select("user_id, created_at")
-    .eq("organization_id", auth.organization.id)
-    .eq("role", "student")
-    .order("created_at", { ascending: false })
+  const users = await listOrganizationUsers(auth.organization.id)
 
-  const userIds = (members ?? []).map((m) => m.user_id).filter(Boolean)
-  if (userIds.length === 0) {
-    return NextResponse.json({ users: [] })
-  }
-
-  const { data: profiles } = await supabase
-    .from("user_profiles")
-    .select("user_id, login_id, display_name, initial_password, created_at")
-    .eq("organization_id", auth.organization.id)
-    .in("user_id", userIds)
-    .order("created_at", { ascending: false })
-
-  return NextResponse.json({ users: profiles ?? [] })
+  return NextResponse.json({ users })
 }
 
 export async function POST(
