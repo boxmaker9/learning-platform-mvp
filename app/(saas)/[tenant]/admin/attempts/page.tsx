@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import AttemptSubQuestionRow from "./AttemptSubQuestionRow"
+import AttemptHistoryList, { type HistoryListEntry } from "./AttemptHistoryList"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
@@ -275,6 +275,57 @@ function buildHistoryList(attempts: AttemptRow[]): HistoryListItem[] {
   return items
 }
 
+function toHistoryListEntries(
+  items: HistoryListItem[],
+  displayForUser: (uid: string) => string,
+  filterUserId: string,
+  formatJaDateFn: (iso: string) => string
+): HistoryListEntry[] {
+  return items.map((item) => {
+    if (item.kind === "standalone") {
+      const row = item.attempt
+      return {
+        key: item.key,
+        kind: "standalone",
+        attemptIds: [row.id],
+        deleteLabel: row.problemTitle,
+        standaloneDate: formatJaDateFn(row.created_at),
+        userLabel: !filterUserId ? displayForUser(row.user_id) : undefined,
+        subQuestions: [
+          {
+            id: row.id,
+            title: row.problemTitle,
+            problemPrompt: row.problemPrompt,
+            userAnswerDisplay: row.userAnswerDisplay,
+            isCorrect: row.is_correct,
+          },
+        ],
+      }
+    }
+
+    const { session } = item
+    const { correct, total } = sessionScore(session.attempts)
+    return {
+      key: item.key,
+      kind: "group_session",
+      attemptIds: session.attempts.map((a) => a.id),
+      deleteLabel: session.groupTitle,
+      groupTitle: session.groupTitle,
+      sessionDate: formatJaDateFn(session.sessionAt),
+      userLabel: !filterUserId ? displayForUser(session.userId) : undefined,
+      scoreCorrect: correct,
+      scoreTotal: total,
+      subQuestions: session.attempts.map((row) => ({
+        id: row.id,
+        title: row.problemTitle,
+        problemPrompt: row.problemPrompt,
+        userAnswerDisplay: row.userAnswerDisplay,
+        isCorrect: row.is_correct,
+      })),
+    }
+  })
+}
+
 export default async function AdminAttemptsHistoryPage({
   params,
   searchParams,
@@ -439,7 +490,20 @@ export default async function AdminAttemptsHistoryPage({
     ),
   }))
 
+  const displayForUser = (uid: string) => {
+    const p = profileByUserId.get(uid)
+    if (p?.display_name?.trim()) return `${p.display_name} (${p.login_id})`
+    if (p) return p.login_id
+    return uid.slice(0, 8) + "…"
+  }
+
   const historyItems = buildHistoryList(attempts)
+  const historyEntries = toHistoryListEntries(
+    historyItems,
+    displayForUser,
+    filterUserId,
+    formatJaDate
+  )
   const groupSessionCount = historyItems.filter((i) => i.kind === "group_session").length
 
   const graded = attempts.filter((a) => a.is_correct !== null && a.is_correct !== undefined)
@@ -447,13 +511,6 @@ export default async function AdminAttemptsHistoryPage({
   const gradedCount = graded.length
   const ratePercent =
     gradedCount === 0 ? null : Math.round((correctCount / gradedCount) * 1000) / 10
-
-  const displayForUser = (uid: string) => {
-    const p = profileByUserId.get(uid)
-    if (p?.display_name?.trim()) return `${p.display_name} (${p.login_id})`
-    if (p) return p.login_id
-    return uid.slice(0, 8) + "…"
-  }
 
   return (
     <div className="space-y-6">
@@ -541,90 +598,11 @@ export default async function AdminAttemptsHistoryPage({
         <CardHeader>
           <CardTitle>履歴一覧</CardTitle>
           <CardDescription>
-            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。展開すると小問ごとに正誤が見られ、小問をさらに展開すると問題文と解答が確認できます。大問の日時は挑戦開始時刻です。大問に属さない小問は1問ごとに日時を表示します。日時は日本時間（Asia/Tokyo）です。
+            大問は「1回の挑戦」ごとに1行表示します（同じ大問を2回解いたら2行）。チェックを付けて「履歴削除」でサーバーから削除できます。大問を選ぶとその回の小問すべてが削除されます。日時は日本時間（Asia/Tokyo）です。
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 overflow-x-auto">
-          {historyItems.length === 0 ? (
-            <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
-          ) : (
-            historyItems.map((item) => {
-              if (item.kind === "standalone") {
-                const row = item.attempt
-                return (
-                  <div
-                    key={item.key}
-                    className="rounded-md border border-slate-200 bg-white px-3 py-2"
-                  >
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                      <span className="font-medium text-slate-500">単独小問</span>
-                      <span>
-                        {formatJaDate(row.created_at)}
-                        {!filterUserId ? (
-                          <span className="ml-2 text-slate-500">
-                            · {displayForUser(row.user_id)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <AttemptSubQuestionRow
-                      title={row.problemTitle}
-                      problemPrompt={row.problemPrompt}
-                      userAnswerDisplay={row.userAnswerDisplay}
-                      isCorrect={row.is_correct}
-                    />
-                  </div>
-                )
-              }
-
-              const { session } = item
-              const showUser = !filterUserId
-              const { correct, total } = sessionScore(session.attempts)
-              return (
-                <details
-                  key={item.key}
-                  className="group rounded-md border border-slate-200 bg-white open:shadow-sm"
-                >
-                  <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-                    <span
-                      className="shrink-0 text-xs text-slate-500 transition-transform group-open:rotate-180"
-                      aria-hidden
-                    >
-                      ▼
-                    </span>
-                    <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                      <span className="truncate font-medium text-slate-900">
-                        {session.groupTitle}
-                      </span>
-                      <span className="shrink-0 text-slate-500">（{total}門）</span>
-                      <span className="shrink-0 font-medium tabular-nums text-slate-700">
-                        {correct}/{total}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs text-slate-600">
-                      {formatJaDate(session.sessionAt)}
-                      {showUser ? (
-                        <span className="ml-2 text-slate-500">
-                          · {displayForUser(session.userId)}
-                        </span>
-                      ) : null}
-                    </span>
-                  </summary>
-                  <div className="space-y-2 border-t border-slate-100 px-2 pb-3 pt-2">
-                    {session.attempts.map((row) => (
-                      <AttemptSubQuestionRow
-                        key={row.id}
-                        title={row.problemTitle}
-                        problemPrompt={row.problemPrompt}
-                        userAnswerDisplay={row.userAnswerDisplay}
-                        isCorrect={row.is_correct}
-                      />
-                    ))}
-                  </div>
-                </details>
-              )
-            })
-          )}
+        <CardContent className="overflow-x-auto">
+          <AttemptHistoryList tenant={params.tenant} entries={historyEntries} />
         </CardContent>
       </Card>
     </div>

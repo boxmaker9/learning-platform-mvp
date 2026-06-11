@@ -274,6 +274,10 @@ with check (
   and user_id = auth.uid()
 );
 
+create policy "admins can delete attempts"
+on public.problem_attempts for delete
+using (public.is_org_admin(organization_id));
+
 create index if not exists problem_attempts_org_created_at_idx
   on public.problem_attempts (organization_id, created_at desc);
 

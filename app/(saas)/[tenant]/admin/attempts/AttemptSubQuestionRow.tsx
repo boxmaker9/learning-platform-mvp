@@ -1,3 +1,5 @@
+"use client"
+
 type AttemptSubQuestionRowProps = {
   title: string
   problemPrompt: string | null
