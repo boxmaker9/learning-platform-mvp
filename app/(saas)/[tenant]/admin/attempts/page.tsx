@@ -13,9 +13,11 @@ type AttemptRow = {
   user_id: string
   problem_id: string
   problemTitle: string
+  problemType: "single_choice" | "multiple_choice" | "text"
   problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
+  answerText: string | null
 }
 
 /** 大問の1回分（受講者が大問を通しで解いた単位） */
@@ -79,6 +81,21 @@ function sessionScore(attempts: AttemptRow[]) {
   return { correct, total }
 }
 
+function formatTextAnswer(answerText: string | null) {
+  const t = answerText?.trim() ?? ""
+  return t.length > 0 ? t : "（未入力）"
+}
+
+function attemptResultMark(row: AttemptRow) {
+  if (row.is_correct === true) {
+    return <span className="font-medium text-emerald-700">正解</span>
+  }
+  if (row.is_correct === false) {
+    return <span className="font-medium text-red-700">不正解</span>
+  }
+  return <span className="text-slate-400">—</span>
+}
+
 /** PostgREST の 1:1 / N:1 embed が単体オブジェクトでも配列でも返る場合に先頭だけ取る */
 function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | null {
   if (v == null) return null
@@ -92,12 +109,14 @@ function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | nu
 
 function parseProblemsJoin(problems: unknown): {
   problemTitle: string
+  problemType: AttemptRow["problemType"]
   problemPosition: number
   problemGroupId: string | null
   problemGroupTitle: string | null
 } {
   const row = firstRelationRow<{
     title?: unknown
+    type?: unknown
     position?: unknown
     problem_group_id?: unknown
     problem_groups?: unknown
@@ -106,6 +125,7 @@ function parseProblemsJoin(problems: unknown): {
   if (!row) {
     return {
       problemTitle: "（タイトル不明）",
+      problemType: "single_choice",
       problemPosition: 0,
       problemGroupId: null,
       problemGroupTitle: null,
@@ -114,6 +134,11 @@ function parseProblemsJoin(problems: unknown): {
 
   const problemTitle =
     typeof row.title === "string" && row.title.length > 0 ? row.title : "（タイトル不明）"
+
+  const problemType: AttemptRow["problemType"] =
+    row.type === "text" || row.type === "multiple_choice" || row.type === "single_choice"
+      ? row.type
+      : "single_choice"
 
   const problemPosition =
     typeof row.position === "number" && Number.isFinite(row.position) ? row.position : 0
@@ -127,7 +152,7 @@ function parseProblemsJoin(problems: unknown): {
   const problemGroupTitle =
     gRow && typeof gRow.title === "string" && gRow.title.length > 0 ? gRow.title : null
 
-  return { problemTitle, problemPosition, problemGroupId: gid, problemGroupTitle }
+  return { problemTitle, problemType, problemPosition, problemGroupId: gid, problemGroupTitle }
 }
 
 /**
@@ -318,7 +343,7 @@ export default async function AdminAttemptsHistoryPage({
   let attemptsQuery = supabase
     .from("problem_attempts")
     .select(
-      "id, created_at, is_correct, user_id, problem_id, problems(title, position, problem_group_id, problem_groups(title))"
+      "id, created_at, is_correct, user_id, problem_id, answer_text, problems(title, type, position, problem_group_id, problem_groups(title))"
     )
     .eq("organization_id", organization.id)
     .gte("created_at", sixMonthsAgoIso())
@@ -338,6 +363,7 @@ export default async function AdminAttemptsHistoryPage({
       is_correct: boolean | null
       user_id: string
       problem_id: string
+      answer_text: string | null
       problems: unknown
     }
     const parsed = parseProblemsJoin(r.problems)
@@ -348,9 +374,11 @@ export default async function AdminAttemptsHistoryPage({
       user_id: r.user_id,
       problem_id: r.problem_id,
       problemTitle: parsed.problemTitle,
+      problemType: parsed.problemType,
       problemPosition: parsed.problemPosition,
       problemGroupId: parsed.problemGroupId,
       problemGroupTitle: parsed.problemGroupTitle,
+      answerText: r.answer_text,
     }
   })
 
@@ -381,7 +409,7 @@ export default async function AdminAttemptsHistoryPage({
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-slate-600">
           <p>
-            記述式の問題は自動採点していないため、一覧の「結果」が「—」になることがあります。択一・複数選択は送信時の正誤が記録されます。
+            記述式は自動採点していないため「結果」は「—」ですが、展開すると受講者の記述解答を確認できます。択一・複数選択は送信時の正誤が記録されます。
           </p>
         </CardContent>
       </Card>
@@ -466,14 +494,6 @@ export default async function AdminAttemptsHistoryPage({
             historyItems.map((item) => {
               if (item.kind === "standalone") {
                 const row = item.attempt
-                const mark =
-                  row.is_correct === true ? (
-                    <span className="font-medium text-emerald-700">正解</span>
-                  ) : row.is_correct === false ? (
-                    <span className="font-medium text-red-700">不正解</span>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )
                 return (
                   <details
                     key={item.key}
@@ -496,7 +516,7 @@ export default async function AdminAttemptsHistoryPage({
                       </span>
                     </summary>
                     <div className="border-t border-slate-100 px-4 pb-3 pt-2">
-                      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                      <dl className="grid gap-3 text-sm sm:grid-cols-2">
                         {!filterUserId ? (
                           <div>
                             <dt className="text-xs font-semibold text-slate-500">受講者</dt>
@@ -505,8 +525,16 @@ export default async function AdminAttemptsHistoryPage({
                         ) : null}
                         <div>
                           <dt className="text-xs font-semibold text-slate-500">結果</dt>
-                          <dd>{mark}</dd>
+                          <dd>{attemptResultMark(row)}</dd>
                         </div>
+                        {row.problemType === "text" ? (
+                          <div className={filterUserId ? "sm:col-span-2" : "sm:col-span-2"}>
+                            <dt className="text-xs font-semibold text-slate-500">記述解答</dt>
+                            <dd className="whitespace-pre-wrap text-slate-800">
+                              {formatTextAnswer(row.answerText)}
+                            </dd>
+                          </div>
+                        ) : null}
                       </dl>
                     </div>
                   </details>
@@ -547,30 +575,30 @@ export default async function AdminAttemptsHistoryPage({
                     </span>
                   </summary>
                   <div className="border-t border-slate-100 px-2 pb-3 pt-1">
-                    <table className="w-full min-w-[480px] border-collapse text-left text-sm">
+                    <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                       <thead>
                         <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
                           <th className="py-2 pr-3">小問</th>
-                          <th className="py-2">結果</th>
+                          <th className="py-2 pr-3">結果</th>
+                          <th className="py-2">記述解答</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {session.attempts.map((row) => {
-                          const mark =
-                            row.is_correct === true ? (
-                              <span className="font-medium text-emerald-700">正解</span>
-                            ) : row.is_correct === false ? (
-                              <span className="font-medium text-red-700">不正解</span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )
-                          return (
-                            <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                              <td className="py-2 pr-3 text-slate-800">{row.problemTitle}</td>
-                              <td className="py-2">{mark}</td>
-                            </tr>
-                          )
-                        })}
+                        {session.attempts.map((row) => (
+                          <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                            <td className="py-2 pr-3 text-slate-800">{row.problemTitle}</td>
+                            <td className="py-2 pr-3">{attemptResultMark(row)}</td>
+                            <td className="py-2 text-slate-800">
+                              {row.problemType === "text" ? (
+                                <span className="whitespace-pre-wrap">
+                                  {formatTextAnswer(row.answerText)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
