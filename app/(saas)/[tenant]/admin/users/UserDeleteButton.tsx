@@ -29,7 +29,7 @@ export default function UserDeleteButton({
     if (!ok) return
 
     const okAgain = window.confirm(
-      "本当に削除しますか？解答履歴も含め、取り消すことはできません。"
+      "本当に削除しますか？解答履歴も含め削除されます。"
     )
     if (!okAgain) return
 
