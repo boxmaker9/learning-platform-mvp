@@ -194,7 +194,7 @@ export default async function AdminProblemsPage({
               {groups.map((group) => (
                 <div
                   key={group.id}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <Link
@@ -244,7 +244,7 @@ export default async function AdminProblemsPage({
               {problems.map((problem) => (
                 <div
                   key={problem.id}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">

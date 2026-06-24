@@ -574,7 +574,7 @@ export default async function AdminAttemptsHistoryPage({
                 id="userId"
                 name="userId"
                 defaultValue={filterUserId}
-                className="w-full rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="">すべての受講者</option>
                 {profiles.map((p) => (

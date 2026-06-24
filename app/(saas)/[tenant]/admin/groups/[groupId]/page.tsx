@@ -145,7 +145,7 @@ export default async function AdminGroupDetailPage({
                 <Link
                   key={problem.id}
                   href={`/${params.tenant}/admin/problems/${problem.id}`}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm transition hover:border-primary-200"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <p className="min-w-0 truncate font-medium">

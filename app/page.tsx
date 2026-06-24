@@ -5,7 +5,7 @@ export default function HomePage() {
       <p className="text-sm text-cream-800">
         サブドメインまたはパスでテナントを識別し、学習コンテンツを管理します。
       </p>
-      <div className="rounded-lg border border-cream-300 bg-cream-50 p-4 text-sm text-cream-700">
+      <div className="rounded-lg border border-cream-300 bg-white p-4 text-sm text-cream-700">
         例: <span className="font-medium text-cream-900">/acme</span> にアクセスすると
         テナントUIが表示されます。
       </div>

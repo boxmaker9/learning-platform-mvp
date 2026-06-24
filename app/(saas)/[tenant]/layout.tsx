@@ -47,7 +47,7 @@ export default async function TenantLayout({
   const isAdmin = membership?.role === "admin"
 
   return (
-    <div className="min-h-screen bg-cream-100 text-cream-900">
+    <div className="min-h-screen bg-cream-100 text-slate-900">
       <header className="border-b border-cream-400 bg-cream-300">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div>
@@ -64,7 +64,7 @@ export default async function TenantLayout({
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-lg border border-cream-300 bg-cream-50 p-4 shadow-sm">
+          <aside className="h-fit rounded-lg border border-cream-300 bg-white p-4 shadow-md">
             <div className="mb-4 border-b border-cream-300 pb-4">
               <p className="text-xs uppercase tracking-wide text-cream-700">
                 Tenant

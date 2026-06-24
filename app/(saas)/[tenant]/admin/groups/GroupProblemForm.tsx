@@ -254,7 +254,7 @@ export default function GroupProblemForm({
                 {Object.entries(typeLabels).map(([value, label]) => (
                   <label
                     key={value}
-                    className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
+                    className="flex items-center gap-2 rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
                   >
                     <RadioGroupItem value={value} aria-label={label} />
                     <span>{label}</span>
@@ -307,7 +307,7 @@ export default function GroupProblemForm({
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -350,7 +350,7 @@ export default function GroupProblemForm({
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -462,7 +462,7 @@ export default function GroupProblemForm({
               {queue.map((q, idx) => (
                 <div
                   key={`${q.title}-${idx}`}
-                  className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{q.title}</p>

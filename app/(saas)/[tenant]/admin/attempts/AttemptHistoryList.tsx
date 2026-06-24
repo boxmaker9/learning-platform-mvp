@@ -142,7 +142,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
             <Button
               type="button"
               variant="secondary"
-              className="border border-red-200 bg-cream-50 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="border border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
               disabled={entries.length === 0}
               onClick={() => setSelectionMode(true)}
             >
@@ -181,7 +181,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                     className={
                       selectionMode && checked
                         ? "rounded-md border border-red-200 bg-red-50/30 px-3 py-2"
-                        : "rounded-md border border-cream-300 bg-cream-50 px-3 py-2"
+                        : "rounded-md border border-cream-300 bg-white px-3 py-2"
                     }
                   >
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -220,7 +220,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                   className={
                     selectionMode && checked
                       ? "group rounded-md border border-red-200 bg-red-50/30 open:shadow-sm"
-                      : "group rounded-md border border-cream-300 bg-cream-50 open:shadow-sm"
+                      : "group rounded-md border border-cream-300 bg-white open:shadow-sm"
                   }
                 >
                   <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-cream-100 [&::-webkit-details-marker]:hidden">

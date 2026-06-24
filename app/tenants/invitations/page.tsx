@@ -45,7 +45,7 @@ export default async function InvitationsPage() {
               {invites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex flex-col gap-3 rounded-md border border-cream-300 bg-cream-50 p-4"
+                  className="flex flex-col gap-3 rounded-md border border-cream-300 bg-white p-4"
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">{invite.email}</p>

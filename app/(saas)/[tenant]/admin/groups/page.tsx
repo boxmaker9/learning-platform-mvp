@@ -154,7 +154,7 @@ export default async function AdminGroupsPage({
               {groups.map((group) => (
                 <div
                   key={group.id}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">

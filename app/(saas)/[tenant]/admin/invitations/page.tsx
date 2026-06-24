@@ -96,7 +96,7 @@ export default async function AdminInvitationsPage({
               {invitations.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex flex-col gap-1 rounded-md border border-cream-300 bg-cream-50 p-3 text-sm"
+                  className="flex flex-col gap-1 rounded-md border border-cream-300 bg-white p-3 text-sm"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium">{invite.email}</p>

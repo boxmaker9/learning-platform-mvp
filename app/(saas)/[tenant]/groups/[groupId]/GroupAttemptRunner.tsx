@@ -210,7 +210,7 @@ export default function GroupAttemptRunner({
                     </div>
                   </div>
                   {p.explanation ? (
-                    <details className="mt-4 rounded-md border border-cream-300 bg-cream-50 px-3 py-2">
+                    <details className="mt-4 rounded-md border border-cream-300 bg-white px-3 py-2">
                       <summary className="cursor-pointer text-sm font-medium text-cream-900">
                         解説を表示
                       </summary>

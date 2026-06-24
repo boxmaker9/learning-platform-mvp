@@ -171,7 +171,7 @@ export default async function AdminProblemDetailPage({
                 {(options ?? []).map((opt) => (
                   <div
                     key={opt.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
                   >
                     <span className="min-w-0 truncate">
                       {typeof opt.position === "number" ? `${opt.position + 1}. ` : ""}

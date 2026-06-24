@@ -161,7 +161,7 @@ export default async function StudentProblemsPage({
                 <Link
                   key={group.id}
                   href={`/${params.tenant}/groups/${group.id}`}
-                  className="flex items-center justify-between gap-4 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm transition hover:border-primary-200"
+                  className="flex items-center justify-between gap-4 rounded-md border border-cream-300 bg-white p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{group.title}</p>
@@ -203,7 +203,7 @@ export default async function StudentProblemsPage({
                 <Link
                   key={problem.id}
                   href={`/${params.tenant}/problems/${problem.id}`}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm transition hover:border-primary-200"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <p className="font-medium">{problem.title}</p>

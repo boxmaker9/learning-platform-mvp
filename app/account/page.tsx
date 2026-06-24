@@ -64,7 +64,7 @@ export default async function AccountPage() {
               {rows.map((row, index) => (
                 <div
                   key={`${row.role}-${row.organization?.[0]?.slug ?? index}`}
-                  className="flex items-center justify-between rounded-md border border-cream-300 bg-cream-50 p-3 text-sm"
+                  className="flex items-center justify-between rounded-md border border-cream-300 bg-white p-3 text-sm"
                 >
                   <div>
                     <p className="font-medium">
