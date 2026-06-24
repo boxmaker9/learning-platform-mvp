@@ -130,7 +130,7 @@ export default function AdminGroupCreatePage() {
                 onChange={(e) => setTagsText(e.currentTarget.value)}
                 placeholder="例: 回線, 基礎, SB"
               />
-              <p className="text-xs text-slate-500">カンマ区切りで複数指定できます。</p>
+              <p className="text-xs text-cream-700">カンマ区切りで複数指定できます。</p>
             </div>
             {error ? (
               <p className="text-sm text-red-600" role="alert">
@@ -152,7 +152,7 @@ export default function AdminGroupCreatePage() {
           <div className="space-y-3">
             <div>
               <p className="text-sm font-medium">既存の大問に小問を追加</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-cream-700">
                 追加先の大問を選んでください（新規作成後は自動で選択されます）。
               </p>
             </div>
@@ -192,6 +192,6 @@ export default function AdminGroupCreatePage() {
 }
 
 function SeparatorBlock() {
-  return <div className="h-px w-full bg-slate-200" />
+  return <div className="h-px w-full bg-cream-300" />
 }
 

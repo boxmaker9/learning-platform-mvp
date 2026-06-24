@@ -137,7 +137,7 @@ export default function AdminGroupEditPage() {
                 onChange={(e) => setTagsText(e.currentTarget.value)}
                 placeholder="例: 回線, 基礎, SB"
               />
-              <p className="text-xs text-slate-500">カンマ区切りで複数指定できます。</p>
+              <p className="text-xs text-cream-700">カンマ区切りで複数指定できます。</p>
             </div>
 
             {submitError ? (

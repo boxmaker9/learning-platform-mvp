@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
             {isSubmitting ? "送信中..." : "再設定メールを送信"}
           </Button>
         </form>
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-sm text-cream-700">
           ログイン画面へ戻る場合は{" "}
           <Link className="font-medium text-primary-600 hover:underline" href="/login">
             こちら

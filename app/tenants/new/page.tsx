@@ -78,7 +78,7 @@ export default function TenantCreatePage() {
           <CardDescription>組織名とURL用のスラッグを入力してください。</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-cream-700">
             ログインが必要です。未登録の場合は{" "}
             <a className="font-medium text-primary-600 hover:underline" href="/signup">
               新規登録
@@ -93,7 +93,7 @@ export default function TenantCreatePage() {
             <div className="space-y-2">
               <Label htmlFor="slug">URLスラッグ</Label>
               <Input id="slug" name="slug" required placeholder="acme" />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-cream-700">
                 半角英数字とハイフンのみ利用できます。
               </p>
             </div>

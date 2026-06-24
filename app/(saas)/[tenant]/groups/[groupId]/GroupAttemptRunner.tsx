@@ -77,7 +77,7 @@ function AnswerResultMark({ isCorrect }: { isCorrect: boolean | null | undefined
   }
   return (
     <span
-      className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-slate-300"
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-cream-400"
       role="img"
       aria-label="未解答"
     >
@@ -128,7 +128,7 @@ export default function GroupAttemptRunner({
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-4">
               <span>{groupTitle}</span>
-              <span className="text-sm font-normal text-slate-500">{progressLabel}</span>
+              <span className="text-sm font-normal text-cream-700">{progressLabel}</span>
             </CardTitle>
             <CardDescription>各小問のあなたの解答と模範解答の対照です。</CardDescription>
           </CardHeader>
@@ -147,24 +147,24 @@ export default function GroupAttemptRunner({
               return (
                 <section
                   key={p.id}
-                  className="border-b border-slate-200 pb-6 last:border-b-0 last:pb-0"
+                  className="border-b border-cream-300 pb-6 last:border-b-0 last:pb-0"
                 >
-                  <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900">
+                  <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold text-cream-900">
                     <AnswerResultMark isCorrect={row?.isCorrect} />
                     <span>
                       {i + 1}. {p.title}
                     </span>
                   </h3>
                   {p.prompt ? (
-                    <div className="mt-3 rounded-md border border-slate-100 bg-slate-50/80 px-3 py-2">
-                      <p className="mb-1 text-xs font-semibold text-slate-500">問題文</p>
-                      <p className="whitespace-pre-wrap text-sm text-slate-800">{p.prompt}</p>
+                    <div className="mt-3 rounded-md border border-cream-200 bg-cream-100/80 px-3 py-2">
+                      <p className="mb-1 text-xs font-semibold text-cream-700">問題文</p>
+                      <p className="whitespace-pre-wrap text-sm text-cream-900">{p.prompt}</p>
                     </div>
                   ) : null}
                   {p.type !== "text" && p.options.length > 0 ? (
                     <div className="mt-3">
-                      <p className="mb-1.5 text-xs font-semibold text-slate-500">選択肢</p>
-                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-800">
+                      <p className="mb-1.5 text-xs font-semibold text-cream-700">選択肢</p>
+                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-cream-900">
                         {p.options.map((opt) => {
                           const picked = userPickedOption(p.type, opt.id, row?.submittedValues)
                           const isModel = Boolean(opt.isCorrect)
@@ -178,7 +178,7 @@ export default function GroupAttemptRunner({
                                   </span>
                                 ) : null}
                                 {picked ? (
-                                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-700">
+                                  <span className="rounded bg-cream-300 px-1.5 py-0.5 text-xs font-medium text-cream-900">
                                     あなたの選択
                                   </span>
                                 ) : null}
@@ -190,9 +190,9 @@ export default function GroupAttemptRunner({
                     </div>
                   ) : null}
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
-                      <p className="mb-1 text-xs font-semibold text-slate-500">あなたの解答</p>
-                      <p className="whitespace-pre-wrap text-sm text-slate-800">
+                    <div className="rounded-md border border-cream-300 bg-cream-100/80 px-3 py-2">
+                      <p className="mb-1 text-xs font-semibold text-cream-700">あなたの解答</p>
+                      <p className="whitespace-pre-wrap text-sm text-cream-900">
                         {row?.userAnswer ?? "未解答"}
                       </p>
                       {row?.isCorrect === true ? (
@@ -210,11 +210,11 @@ export default function GroupAttemptRunner({
                     </div>
                   </div>
                   {p.explanation ? (
-                    <details className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-2">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                    <details className="mt-4 rounded-md border border-cream-300 bg-cream-50 px-3 py-2">
+                      <summary className="cursor-pointer text-sm font-medium text-cream-900">
                         解説を表示
                       </summary>
-                      <div className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
+                      <div className="mt-2 whitespace-pre-wrap text-sm text-cream-900">
                         {p.explanation}
                       </div>
                     </details>
@@ -247,7 +247,7 @@ export default function GroupAttemptRunner({
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-4">
             <span>{groupTitle}</span>
-            <span className="text-sm font-normal text-slate-500">{progressLabel}</span>
+            <span className="text-sm font-normal text-cream-700">{progressLabel}</span>
           </CardTitle>
           <CardDescription>
             全{total}問。回答を送信すると正誤と解説が表示されます。確認したら「次の小問」で進み、最後は「解答一覧を見る」でまとめを表示できます。

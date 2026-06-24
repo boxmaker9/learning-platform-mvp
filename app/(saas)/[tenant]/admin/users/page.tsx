@@ -98,7 +98,7 @@ export default async function AdminUsersPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-cream-800">
             メールで登録した管理者はログインIDの代わりにメールアドレスを表示します。パスワードは目のアイコンで表示できます。
           </p>
           <div className="flex flex-wrap gap-2">
@@ -121,11 +121,11 @@ export default async function AdminUsersPage({
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {users.length === 0 ? (
-            <p className="text-sm text-slate-500">まだユーザーがいません。</p>
+            <p className="text-sm text-cream-700">まだユーザーがいません。</p>
           ) : (
             <table className="w-full min-w-[760px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500">
+                <tr className="border-b border-cream-300 text-xs font-semibold text-cream-700">
                   <th className="py-2 pr-3">種別</th>
                   <th className="py-2 pr-3">ログインID / メール</th>
                   <th className="py-2 pr-3">表示名</th>
@@ -141,29 +141,29 @@ export default async function AdminUsersPage({
                     ? `${user.display_name}（${userIdentifier(user)}）`
                     : userIdentifier(user)
                   return (
-                    <tr key={user.user_id} className="border-b border-slate-100 last:border-0">
+                    <tr key={user.user_id} className="border-b border-cream-200 last:border-0">
                       <td className="py-2 pr-3">
                         <span
                           className={
                             user.role === "admin"
                               ? "inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
-                              : "inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+                              : "inline-flex rounded-full bg-cream-200 px-2 py-0.5 text-xs font-medium text-cream-900"
                           }
                         >
                           {roleLabel(user.role)}
                           {isSelf ? " · 自分" : ""}
                         </span>
                       </td>
-                      <td className="py-2 pr-3 font-mono text-slate-800">
+                      <td className="py-2 pr-3 font-mono text-cream-900">
                         {userIdentifier(user)}
                       </td>
-                      <td className="py-2 pr-3 text-slate-800">
+                      <td className="py-2 pr-3 text-cream-900">
                         {user.display_name?.trim() ? user.display_name : "—"}
                       </td>
                       <td className="py-2 pr-3">
                         <UserPasswordField password={user.initial_password} />
                       </td>
-                      <td className="py-2 pr-3 whitespace-nowrap text-slate-600">
+                      <td className="py-2 pr-3 whitespace-nowrap text-cream-800">
                         {formatJaDate(user.created_at)}
                       </td>
                       <td className="py-2 text-right">

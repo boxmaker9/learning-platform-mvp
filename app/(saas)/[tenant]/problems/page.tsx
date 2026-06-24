@@ -161,7 +161,7 @@ export default async function StudentProblemsPage({
                 <Link
                   key={group.id}
                   href={`/${params.tenant}/groups/${group.id}`}
-                  className="flex items-center justify-between gap-4 rounded-md border border-gray-200 bg-white p-4 text-sm transition hover:border-primary-200"
+                  className="flex items-center justify-between gap-4 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{group.title}</p>
@@ -174,16 +174,16 @@ export default async function StudentProblemsPage({
                         ))}
                       </div>
                     ) : null}
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-cream-700">
                       全{groupCountById.get(group.id) ?? 0}問
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-500">解く</span>
+                  <span className="shrink-0 text-xs text-cream-700">解く</span>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedGroupTag ? "このタグの大問がありません。" : "大問がまだありません。"}
             </div>
           )}
@@ -203,7 +203,7 @@ export default async function StudentProblemsPage({
                 <Link
                   key={problem.id}
                   href={`/${params.tenant}/problems/${problem.id}`}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm transition hover:border-primary-200"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm transition hover:border-primary-200"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <p className="font-medium">{problem.title}</p>
@@ -220,7 +220,7 @@ export default async function StudentProblemsPage({
                       ))}
                     </div>
                   ) : null}
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-cream-700">
                     <span>作成日: {formatDate(problem.created_at)}</span>
                     <span>解く</span>
                   </div>
@@ -228,7 +228,7 @@ export default async function StudentProblemsPage({
               ))}
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedTag ? "このタグの問題がありません。" : "まだ問題がありません。"}
             </div>
           )}

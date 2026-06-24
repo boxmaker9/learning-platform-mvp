@@ -82,7 +82,7 @@ export default function UserCreateForm({
               placeholder="例: admin01"
               autoComplete="off"
             />
-            <p className="text-xs text-slate-500">英数字と `-` `_` のみ、3〜32文字。</p>
+            <p className="text-xs text-cream-700">英数字と `-` `_` のみ、3〜32文字。</p>
           </div>
 
           <div className="space-y-2">

@@ -206,7 +206,7 @@ export default function GroupProblemForm({
               <input type="hidden" {...register("groupId")} />
               <p
                 id="groupId-display"
-                className="rounded-md border border-gray-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700"
+                className="rounded-md border border-cream-300 bg-cream-100 px-3 py-2 font-mono text-sm text-cream-900"
               >
                 {groupId}
               </p>
@@ -238,7 +238,7 @@ export default function GroupProblemForm({
 
             <fieldset className="space-y-3" aria-describedby="type-help">
               <legend className="text-sm font-medium">問題タイプ</legend>
-              <p id="type-help" className="text-xs text-slate-500">
+              <p id="type-help" className="text-xs text-cream-700">
                 作成する問題形式を選択してください。
               </p>
               <RadioGroup
@@ -254,7 +254,7 @@ export default function GroupProblemForm({
                 {Object.entries(typeLabels).map(([value, label]) => (
                   <label
                     key={value}
-                    className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                    className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
                   >
                     <RadioGroupItem value={value} aria-label={label} />
                     <span>{label}</span>
@@ -282,7 +282,7 @@ export default function GroupProblemForm({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">選択肢</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-cream-700">
                       正解を設定しながら選択肢を追加してください。
                     </p>
                   </div>
@@ -307,7 +307,7 @@ export default function GroupProblemForm({
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -325,7 +325,7 @@ export default function GroupProblemForm({
                           </Button>
                         </div>
 
-                        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-cream-800">
                           <input
                             type="radio"
                             name={singleCorrectRadioName}
@@ -350,7 +350,7 @@ export default function GroupProblemForm({
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -372,7 +372,7 @@ export default function GroupProblemForm({
                           control={control}
                           name={`options.${index}.isCorrect`}
                           render={({ field: checkboxField }) => (
-                            <label className="flex items-center gap-2 text-sm text-slate-600">
+                            <label className="flex items-center gap-2 text-sm text-cream-800">
                               <Checkbox
                                 checked={checkboxField.value}
                                 onCheckedChange={(checked) =>
@@ -409,7 +409,7 @@ export default function GroupProblemForm({
             <Separator />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-cream-700">
                 {submitSuccess ? (
                   <span className="text-emerald-600">保存が完了しました。</span>
                 ) : null}
@@ -462,11 +462,11 @@ export default function GroupProblemForm({
               {queue.map((q, idx) => (
                 <div
                   key={`${q.title}-${idx}`}
-                  className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{q.title}</p>
-                    <p className="text-xs text-slate-500">{typeLabels[q.type]}</p>
+                    <p className="text-xs text-cream-700">{typeLabels[q.type]}</p>
                   </div>
                   <Button
                     type="button"
@@ -498,13 +498,13 @@ export default function GroupProblemForm({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Badge>{typeLabels[watch("type")]}</Badge>
-              <span className="text-xs text-slate-500">Preview</span>
+              <span className="text-xs text-cream-700">Preview</span>
             </div>
             <div>
               <h2 className="text-lg font-semibold">
                 {watch("title") ? watch("title") : "タイトル未入力"}
               </h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-cream-800">
                 {watch("prompt") ? watch("prompt") : "問題文がまだ入力されていません。"}
               </p>
             </div>

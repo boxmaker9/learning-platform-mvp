@@ -87,13 +87,13 @@ export default function LoginPage() {
             {isSubmitting ? "ログイン中..." : "ログイン"}
           </Button>
         </form>
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-sm text-cream-700">
           アカウントがない場合は{" "}
           <Link className="font-medium text-primary-600 hover:underline" href="/signup">
             新規登録
           </Link>
         </p>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-cream-700">
           パスワードを忘れた場合は{" "}
           <Link className="font-medium text-primary-600 hover:underline" href="/forgot-password">
             再設定

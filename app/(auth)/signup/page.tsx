@@ -83,7 +83,7 @@ export default function SignupPage() {
             {isSubmitting ? "作成中..." : "アカウント作成"}
           </Button>
         </form>
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-sm text-cream-700">
           すでに登録済みの場合は{" "}
           <Link className="font-medium text-primary-600 hover:underline" href="/login">
             ログイン

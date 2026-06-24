@@ -151,27 +151,27 @@ export default async function AdminProblemDetailPage({
             </div>
           ) : null}
           <div>
-            <p className="text-sm font-medium text-slate-700">問題文</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+            <p className="text-sm font-medium text-cream-900">問題文</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-cream-900">
               {problem.prompt ?? "（未入力）"}
             </p>
           </div>
 
           {problem.type === "text" ? (
             <div>
-              <p className="text-sm font-medium text-slate-700">模範解答</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+              <p className="text-sm font-medium text-cream-900">模範解答</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-cream-900">
                 {problem.answer_text ?? "（未入力）"}
               </p>
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium text-slate-700">選択肢</p>
+              <p className="text-sm font-medium text-cream-900">選択肢</p>
               <div className="mt-2 space-y-2">
                 {(options ?? []).map((opt) => (
                   <div
                     key={opt.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
                   >
                     <span className="min-w-0 truncate">
                       {typeof opt.position === "number" ? `${opt.position + 1}. ` : ""}
@@ -180,20 +180,20 @@ export default async function AdminProblemDetailPage({
                     {opt.is_correct ? (
                       <Badge variant="secondary">正解</Badge>
                     ) : (
-                      <span className="text-xs text-slate-400"> </span>
+                      <span className="text-xs text-cream-600"> </span>
                     )}
                   </div>
                 ))}
                 {options && options.length === 0 ? (
-                  <p className="text-sm text-slate-500">（選択肢なし）</p>
+                  <p className="text-sm text-cream-700">（選択肢なし）</p>
                 ) : null}
               </div>
             </div>
           )}
 
           <div>
-            <p className="text-sm font-medium text-slate-700">解説</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+            <p className="text-sm font-medium text-cream-900">解説</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-cream-900">
               {problem.explanation ?? "（未入力）"}
             </p>
           </div>

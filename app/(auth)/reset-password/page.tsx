@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
         ) : (
-          <div className="space-y-3 text-sm text-slate-600">
+          <div className="space-y-3 text-sm text-cream-800">
             <p>再設定メールのリンクからアクセスしてください。</p>
             <Link className="font-medium text-primary-600 hover:underline" href="/login">
               ログインへ戻る

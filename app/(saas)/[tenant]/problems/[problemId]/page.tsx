@@ -95,7 +95,7 @@ export default async function ProblemAttemptPage({
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-slate-500">タイトル</p>
+              <p className="text-sm text-cream-700">タイトル</p>
               <p className="text-lg font-semibold">{problem.title}</p>
             </div>
             <Badge variant="secondary">
@@ -103,8 +103,8 @@ export default async function ProblemAttemptPage({
             </Badge>
           </div>
           <div>
-            <p className="text-sm text-slate-500">問題文</p>
-            <p className="mt-1 text-sm text-slate-700">{problem.prompt}</p>
+            <p className="text-sm text-cream-700">問題文</p>
+            <p className="mt-1 text-sm text-cream-900">{problem.prompt}</p>
           </div>
         </CardContent>
       </Card>

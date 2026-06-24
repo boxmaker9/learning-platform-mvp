@@ -96,18 +96,18 @@ export default async function AdminInvitationsPage({
               {invitations.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex flex-col gap-1 rounded-md border border-gray-200 bg-white p-3 text-sm"
+                  className="flex flex-col gap-1 rounded-md border border-cream-300 bg-cream-50 p-3 text-sm"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium">{invite.email}</p>
                     <Badge variant="secondary">{invite.status}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500">Role: {invite.role}</p>
+                  <p className="text-xs text-cream-700">Role: {invite.role}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">招待はまだありません。</p>
+            <p className="text-sm text-cream-700">招待はまだありません。</p>
           )}
         </CardContent>
       </Card>

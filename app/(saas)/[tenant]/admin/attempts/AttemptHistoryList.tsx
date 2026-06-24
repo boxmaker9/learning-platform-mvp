@@ -142,7 +142,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
             <Button
               type="button"
               variant="secondary"
-              className="border border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="border border-red-200 bg-cream-50 text-red-600 hover:bg-red-50 hover:text-red-700"
               disabled={entries.length === 0}
               onClick={() => setSelectionMode(true)}
             >
@@ -153,12 +153,12 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
       </CardHeader>
       <CardContent className="overflow-x-auto">
         {entries.length === 0 ? (
-          <p className="text-sm text-slate-500">該当する解答履歴がありません。</p>
+          <p className="text-sm text-cream-700">該当する解答履歴がありません。</p>
         ) : (
           <div className="space-y-3">
             {selectionMode ? (
               <div className="flex flex-wrap items-center gap-3 rounded-md border border-red-100 bg-red-50/50 px-3 py-2">
-                <label className="flex items-center gap-2 text-sm text-slate-700">
+                <label className="flex items-center gap-2 text-sm text-cream-900">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={(checked) => toggleAll(checked === true)}
@@ -166,7 +166,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                   />
                   すべて選択
                 </label>
-                <span className="text-sm text-slate-600">{selectedKeys.size} 件選択中</span>
+                <span className="text-sm text-cream-800">{selectedKeys.size} 件選択中</span>
               </div>
             ) : null}
 
@@ -181,11 +181,11 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                     className={
                       selectionMode && checked
                         ? "rounded-md border border-red-200 bg-red-50/30 px-3 py-2"
-                        : "rounded-md border border-slate-200 bg-white px-3 py-2"
+                        : "rounded-md border border-cream-300 bg-cream-50 px-3 py-2"
                     }
                   >
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <div className="flex items-center gap-2 text-xs text-cream-800">
                         {selectionMode ? (
                           <Checkbox
                             checked={checked}
@@ -193,12 +193,12 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                             aria-label={`${entry.deleteLabel} を選択`}
                           />
                         ) : null}
-                        <span className="font-medium text-slate-500">単独小問</span>
+                        <span className="font-medium text-cream-700">単独小問</span>
                       </div>
-                      <span className="text-xs text-slate-600">
+                      <span className="text-xs text-cream-800">
                         {entry.standaloneDate}
                         {entry.userLabel ? (
-                          <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
+                          <span className="ml-2 text-cream-700">· {entry.userLabel}</span>
                         ) : null}
                       </span>
                     </div>
@@ -220,10 +220,10 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                   className={
                     selectionMode && checked
                       ? "group rounded-md border border-red-200 bg-red-50/30 open:shadow-sm"
-                      : "group rounded-md border border-slate-200 bg-white open:shadow-sm"
+                      : "group rounded-md border border-cream-300 bg-cream-50 open:shadow-sm"
                   }
                 >
-                  <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-cream-100 [&::-webkit-details-marker]:hidden">
                     {selectionMode ? (
                       <span onClick={stopToggle} onKeyDown={(e) => e.stopPropagation()}>
                         <Checkbox
@@ -234,26 +234,26 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                       </span>
                     ) : null}
                     <span
-                      className="shrink-0 text-xs text-slate-500 transition-transform group-open:rotate-180"
+                      className="shrink-0 text-xs text-cream-700 transition-transform group-open:rotate-180"
                       aria-hidden
                     >
                       ▼
                     </span>
                     <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                      <span className="truncate font-medium text-slate-900">{entry.groupTitle}</span>
-                      <span className="shrink-0 text-slate-500">（{entry.scoreTotal}門）</span>
-                      <span className="shrink-0 font-medium tabular-nums text-slate-700">
+                      <span className="truncate font-medium text-cream-900">{entry.groupTitle}</span>
+                      <span className="shrink-0 text-cream-700">（{entry.scoreTotal}門）</span>
+                      <span className="shrink-0 font-medium tabular-nums text-cream-900">
                         {entry.scoreCorrect}/{entry.scoreTotal}
                       </span>
                     </span>
-                    <span className="shrink-0 text-xs text-slate-600">
+                    <span className="shrink-0 text-xs text-cream-800">
                       {entry.sessionDate}
                       {entry.userLabel ? (
-                        <span className="ml-2 text-slate-500">· {entry.userLabel}</span>
+                        <span className="ml-2 text-cream-700">· {entry.userLabel}</span>
                       ) : null}
                     </span>
                   </summary>
-                  <div className="space-y-2 border-t border-slate-100 px-2 pb-3 pt-2">
+                  <div className="space-y-2 border-t border-cream-200 px-2 pb-3 pt-2">
                     {entry.subQuestions.map((row) => (
                       <AttemptSubQuestionRow
                         key={row.id}

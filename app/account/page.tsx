@@ -43,12 +43,12 @@ export default async function AccountPage() {
           <CardTitle>アカウント情報</CardTitle>
           <CardDescription>ログイン中のユーザー情報です。</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-slate-600">
+        <CardContent className="space-y-2 text-sm text-cream-800">
           <div>
-            <span className="font-medium text-slate-900">Email:</span> {userData.user.email}
+            <span className="font-medium text-cream-900">Email:</span> {userData.user.email}
           </div>
           <div>
-            <span className="font-medium text-slate-900">User ID:</span> {userData.user.id}
+            <span className="font-medium text-cream-900">User ID:</span> {userData.user.id}
           </div>
         </CardContent>
       </Card>
@@ -64,13 +64,13 @@ export default async function AccountPage() {
               {rows.map((row, index) => (
                 <div
                   key={`${row.role}-${row.organization?.[0]?.slug ?? index}`}
-                  className="flex items-center justify-between rounded-md border border-gray-200 bg-white p-3 text-sm"
+                  className="flex items-center justify-between rounded-md border border-cream-300 bg-cream-50 p-3 text-sm"
                 >
                   <div>
                     <p className="font-medium">
                       {row.organization?.[0]?.name ?? "テナント名不明"}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-cream-700">
                       {row.organization?.[0]?.slug ?? "-"}
                     </p>
                   </div>
@@ -79,7 +79,7 @@ export default async function AccountPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">所属テナントはありません。</p>
+            <p className="text-sm text-cream-700">所属テナントはありません。</p>
           )}
         </CardContent>
       </Card>

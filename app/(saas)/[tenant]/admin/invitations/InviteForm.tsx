@@ -83,7 +83,7 @@ export default function InviteForm({ tenant }: { tenant: string }) {
           {success}
         </p>
       ) : null}
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-cream-700">
         招待メール送信は未実装です。受講者は
         <span className="font-medium"> /tenants/invitations </span>
         で受諾できます。

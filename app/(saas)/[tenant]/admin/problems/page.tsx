@@ -161,7 +161,7 @@ export default async function AdminProblemsPage({
           <CardDescription>{organization.name} の問題を管理します。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-cream-700">
             問題の作成・編集は管理者のみ可能です。
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -194,7 +194,7 @@ export default async function AdminProblemsPage({
               {groups.map((group) => (
                 <div
                   key={group.id}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <Link
@@ -204,13 +204,13 @@ export default async function AdminProblemsPage({
                       {group.title}
                     </Link>
                     <div className="flex items-center gap-3">
-                      <span className="shrink-0 text-xs text-slate-500">
+                      <span className="shrink-0 text-xs text-cream-700">
                         全{groupCountById.get(group.id) ?? 0}問
                       </span>
                       <DeleteGroupButton tenant={params.tenant} groupId={group.id} />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-cream-700">
                     <span>作成日: {formatDate(group.created_at)}</span>
                     <Link
                       className="font-medium text-primary-600 hover:underline"
@@ -223,7 +223,7 @@ export default async function AdminProblemsPage({
               ))}
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedGroupTag
                 ? "このタグの大問がありません。"
                 : "まだ大問がありません。右上の「大問を作成」から追加してください。"}
@@ -244,7 +244,7 @@ export default async function AdminProblemsPage({
               {problems.map((problem) => (
                 <div
                   key={problem.id}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3">
@@ -260,7 +260,7 @@ export default async function AdminProblemsPage({
                       {typeLabels[problem.type] ?? problem.type}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-cream-700">
                     <span>作成日: {formatDate(problem.created_at)}</span>
                     <DeleteProblemButton tenant={params.tenant} problemId={problem.id} />
                   </div>
@@ -268,7 +268,7 @@ export default async function AdminProblemsPage({
               ))}
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedTag
                 ? "このタグの小問がありません。"
                 : "まだ小問がありません。右上の「小問を作成」から追加してください。"}

@@ -45,19 +45,19 @@ export default async function InvitationsPage() {
               {invites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex flex-col gap-3 rounded-md border border-gray-200 bg-white p-4"
+                  className="flex flex-col gap-3 rounded-md border border-cream-300 bg-cream-50 p-4"
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">{invite.email}</p>
                     <Badge variant="secondary">{invite.status}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500">Role: {invite.role}</p>
+                  <p className="text-xs text-cream-700">Role: {invite.role}</p>
                   <AcceptInviteButton inviteId={invite.id} />
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">未処理の招待はありません。</p>
+            <p className="text-sm text-cream-700">未処理の招待はありません。</p>
           )}
         </CardContent>
       </Card>

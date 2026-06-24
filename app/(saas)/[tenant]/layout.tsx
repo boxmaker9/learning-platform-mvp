@@ -47,16 +47,16 @@ export default async function TenantLayout({
   const isAdmin = membership?.role === "admin"
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-900">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-cream-100 text-cream-900">
+      <header className="border-b border-cream-400 bg-cream-300">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-cream-800">
               Tenant
             </p>
             <p className="text-lg font-semibold">{params.tenant}</p>
           </div>
-          <div className="text-right text-xs text-slate-500">
+          <div className="text-right text-xs text-cream-800">
             {email ? <p>{email}</p> : null}
             <p>Learning Platform MVP</p>
           </div>
@@ -64,9 +64,9 @@ export default async function TenantLayout({
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-lg border border-slate-200 bg-white p-4">
-            <div className="mb-4 border-b border-slate-200 pb-4">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
+          <aside className="h-fit rounded-lg border border-cream-300 bg-cream-50 p-4 shadow-sm">
+            <div className="mb-4 border-b border-cream-300 pb-4">
+              <p className="text-xs uppercase tracking-wide text-cream-700">
                 Tenant
               </p>
               <p className="text-sm font-semibold">{params.tenant}</p>
@@ -74,7 +74,7 @@ export default async function TenantLayout({
             {isAdmin ? (
               <>
                 <nav className="space-y-2">
-                  <p className="text-xs font-semibold text-slate-500">管理者</p>
+                  <p className="text-xs font-semibold text-cream-700">管理者</p>
                   {adminItems.map((item) => (
                     <Button
                       key={item.href}
@@ -88,11 +88,11 @@ export default async function TenantLayout({
                     </Button>
                   ))}
                 </nav>
-                <div className="my-4 border-t border-slate-200" />
+                <div className="my-4 border-t border-cream-300" />
               </>
             ) : null}
             <nav className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500">学習者</p>
+              <p className="text-xs font-semibold text-cream-700">学習者</p>
               {studentItems.map((item) => (
                 <Button
                   key={item.href}

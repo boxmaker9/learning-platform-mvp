@@ -198,12 +198,12 @@ export default function ProblemCreatePage() {
                   {errors.tags.message as string}
                 </p>
               ) : null}
-              <p className="text-xs text-slate-500">カンマ区切りで複数指定できます。</p>
+              <p className="text-xs text-cream-700">カンマ区切りで複数指定できます。</p>
             </div>
 
             <fieldset className="space-y-3" aria-describedby="type-help">
               <legend className="text-sm font-medium">問題タイプ</legend>
-              <p id="type-help" className="text-xs text-slate-500">
+              <p id="type-help" className="text-xs text-cream-700">
                 作成する問題形式を選択してください。
               </p>
               <RadioGroup
@@ -219,7 +219,7 @@ export default function ProblemCreatePage() {
                 {Object.entries(typeLabels).map(([value, label]) => (
                   <label
                     key={value}
-                    className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                    className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
                   >
                     <RadioGroupItem value={value} aria-label={label} />
                     <span>{label}</span>
@@ -247,7 +247,7 @@ export default function ProblemCreatePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">選択肢</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-cream-700">
                       正解を設定しながら選択肢を追加してください。
                     </p>
                   </div>
@@ -272,7 +272,7 @@ export default function ProblemCreatePage() {
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -290,7 +290,7 @@ export default function ProblemCreatePage() {
                           </Button>
                         </div>
 
-                        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-cream-800">
                           <input
                             type="radio"
                             name={singleCorrectRadioName}
@@ -315,7 +315,7 @@ export default function ProblemCreatePage() {
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
+                        className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Input
@@ -337,7 +337,7 @@ export default function ProblemCreatePage() {
                           control={control}
                           name={`options.${index}.isCorrect`}
                           render={({ field: checkboxField }) => (
-                            <label className="flex items-center gap-2 text-sm text-slate-600">
+                            <label className="flex items-center gap-2 text-sm text-cream-800">
                               <Checkbox
                                 checked={checkboxField.value}
                                 onCheckedChange={(checked) =>
@@ -374,7 +374,7 @@ export default function ProblemCreatePage() {
             <Separator />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-cream-700">
                 {submitSuccess ? (
                   <span className="text-emerald-600">保存が完了しました。</span>
                 ) : null}
@@ -413,7 +413,7 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Badge>{typeLabels[values.type]}</Badge>
-        <span className="text-xs text-slate-500">Preview</span>
+        <span className="text-xs text-cream-700">Preview</span>
       </div>
 
       {values.tags && values.tags.length > 0 ? (
@@ -430,7 +430,7 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
         <h2 className="text-lg font-semibold">
           {values.title ? values.title : "タイトル未入力"}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-cream-800">
           {values.prompt ? values.prompt : "問題文がまだ入力されていません。"}
         </p>
       </div>
@@ -438,11 +438,11 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
       {values.type === "text" ? (
         <div className="space-y-2">
           <p className="text-sm font-medium">回答欄</p>
-          <div className="min-h-[120px] rounded-md border border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-slate-500">
+          <div className="min-h-[120px] rounded-md border border-dashed border-gray-300 bg-cream-200 p-3 text-sm text-cream-700">
             記述式の回答を入力します。
           </div>
           {values.textAnswer ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-cream-700">
               模範解答: {values.textAnswer}
             </p>
           ) : null}
@@ -452,12 +452,12 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
           <p className="text-sm font-medium">選択肢</p>
           <ul className="space-y-2">
             {values.options.length === 0 ? (
-              <li className="text-sm text-slate-500">選択肢がありません。</li>
+              <li className="text-sm text-cream-700">選択肢がありません。</li>
             ) : (
               values.options.map((option, index) => (
                 <li
                   key={`${option.label}-${index}`}
-                  className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                  className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
                 >
                   <span className="font-medium">{index + 1}.</span>
                   <span>{option.label || "未入力の選択肢"}</span>
@@ -474,7 +474,7 @@ function ProblemPreview({ values }: { values: ProblemFormValues }) {
       )}
 
       {values.explanation ? (
-        <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-slate-600">
+        <div className="rounded-md border border-cream-300 bg-cream-200 p-3 text-xs text-cream-800">
           {values.explanation}
         </div>
       ) : null}

@@ -179,7 +179,7 @@ export default function ProblemAttemptForm({
             {options.map((option) => (
               <label
                 key={option.id}
-                className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
               >
                 <RadioGroupItem value={option.id} disabled={Boolean(locked || hasSubmitted)} />
                 <span>{option.label}</span>
@@ -193,7 +193,7 @@ export default function ProblemAttemptForm({
           {options.map((option) => (
             <label
               key={option.id}
-              className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm"
             >
               <Checkbox
                 checked={Boolean(selectedOptionIds?.[option.id])}
@@ -229,13 +229,13 @@ export default function ProblemAttemptForm({
             </p>
           ) : null}
           {resultLabel === "pending" ? (
-            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <p className="rounded-md border border-cream-300 bg-cream-100 px-3 py-2 text-sm text-cream-900">
               記述問題のため、この場では正誤を表示できません。
             </p>
           ) : null}
           {explanation ? (
-            <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-              <p className="mb-1 text-xs font-semibold text-slate-500">解説</p>
+            <div className="rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm text-cream-900">
+              <p className="mb-1 text-xs font-semibold text-cream-700">解説</p>
               <p className="whitespace-pre-wrap">{explanation}</p>
             </div>
           ) : null}

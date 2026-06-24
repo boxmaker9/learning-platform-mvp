@@ -48,7 +48,7 @@ export default function TagFilter({
       <Label htmlFor={htmlId}>{label}</Label>
       <select
         id={htmlId}
-        className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full rounded-md border border-cream-300 bg-cream-50 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
         value={selectedTag}
         onChange={(e) => onChange(e.currentTarget.value)}
       >

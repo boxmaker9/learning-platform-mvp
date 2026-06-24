@@ -120,7 +120,7 @@ export default async function AdminGroupsPage({
           <CardDescription>{organization.name} の大問（問題セット）を管理します。</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">小問の追加は各大問から行えます。</p>
+          <p className="text-sm text-cream-700">小問の追加は各大問から行えます。</p>
           <Button asChild>
             <Link href={`/${params.tenant}/admin/groups/new`}>大問を作成</Link>
           </Button>
@@ -154,7 +154,7 @@ export default async function AdminGroupsPage({
               {groups.map((group) => (
                 <div
                   key={group.id}
-                  className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-4 text-sm"
+                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-cream-50 p-4 text-sm"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -169,7 +169,7 @@ export default async function AdminGroupsPage({
                         </div>
                       ) : null}
                     </div>
-                    <span className="shrink-0 text-xs text-slate-500">
+                    <span className="shrink-0 text-xs text-cream-700">
                       全{groupCountById.get(group.id) ?? 0}問
                     </span>
                   </div>
@@ -189,7 +189,7 @@ export default async function AdminGroupsPage({
               ))}
             </div>
           ) : (
-            <div className="rounded-md border border-dashed border-gray-200 p-6 text-sm text-slate-500">
+            <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedGroupTag
                 ? "このタグの大問がありません。"
                 : "まだ大問がありません。「大問を作成」から追加してください。"}
