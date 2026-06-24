@@ -19,9 +19,17 @@ type AttemptRow = {
   problemGroupId: string | null
   problemGroupTitle: string | null
   problemPrompt: string | null
+  categoryTags: string[]
   answerText: string | null
   selectedOptionIds: string[]
   userAnswerDisplay: string
+}
+
+type CategoryIncorrectRate = {
+  tag: string
+  incorrectCount: number
+  gradedCount: number
+  incorrectRatePercent: number
 }
 
 /** 大問の1回分（受講者が大問を通しで解いた単位） */
@@ -119,6 +127,55 @@ function firstRelationRow<T extends Record<string, unknown>>(v: unknown): T | nu
   return null
 }
 
+function parseStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return v.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+}
+
+function effectiveCategoryTags(problemTags: string[], groupTags: string[]): string[] {
+  if (problemTags.length > 0) return problemTags
+  return groupTags
+}
+
+function computeTopCategoryIncorrectRates(
+  attempts: AttemptRow[],
+  limit = 3
+): CategoryIncorrectRate[] {
+  const statsByTag = new Map<string, { incorrect: number; graded: number }>()
+
+  for (const attempt of attempts) {
+    if (attempt.is_correct === null || attempt.is_correct === undefined) continue
+    if (attempt.categoryTags.length === 0) continue
+
+    for (const tag of attempt.categoryTags) {
+      const current = statsByTag.get(tag) ?? { incorrect: 0, graded: 0 }
+      current.graded += 1
+      if (attempt.is_correct === false) {
+        current.incorrect += 1
+      }
+      statsByTag.set(tag, current)
+    }
+  }
+
+  return Array.from(statsByTag.entries())
+    .map(([tag, { incorrect, graded }]) => ({
+      tag,
+      incorrectCount: incorrect,
+      gradedCount: graded,
+      incorrectRatePercent: Math.round((incorrect / graded) * 1000) / 10,
+    }))
+    .sort((a, b) => {
+      if (b.incorrectRatePercent !== a.incorrectRatePercent) {
+        return b.incorrectRatePercent - a.incorrectRatePercent
+      }
+      if (b.gradedCount !== a.gradedCount) {
+        return b.gradedCount - a.gradedCount
+      }
+      return a.tag.localeCompare(b.tag, "ja")
+    })
+    .slice(0, limit)
+}
+
 function parseProblemsJoin(problems: unknown): {
   problemTitle: string
   problemType: AttemptRow["problemType"]
@@ -126,12 +183,14 @@ function parseProblemsJoin(problems: unknown): {
   problemGroupId: string | null
   problemGroupTitle: string | null
   problemPrompt: string | null
+  categoryTags: string[]
 } {
   const row = firstRelationRow<{
     title?: unknown
     type?: unknown
     position?: unknown
     prompt?: unknown
+    tags?: unknown
     problem_group_id?: unknown
     problem_groups?: unknown
   }>(problems)
@@ -144,6 +203,7 @@ function parseProblemsJoin(problems: unknown): {
       problemGroupId: null,
       problemGroupTitle: null,
       problemPrompt: null,
+      categoryTags: [],
     }
   }
 
@@ -165,9 +225,13 @@ function parseProblemsJoin(problems: unknown): {
       ? row.problem_group_id
       : null
 
-  const gRow = firstRelationRow<{ title?: unknown }>(row.problem_groups)
+  const gRow = firstRelationRow<{ title?: unknown; tags?: unknown }>(row.problem_groups)
   const problemGroupTitle =
     gRow && typeof gRow.title === "string" && gRow.title.length > 0 ? gRow.title : null
+  const categoryTags = effectiveCategoryTags(
+    parseStringArray(row.tags),
+    gRow ? parseStringArray(gRow.tags) : []
+  )
 
   return {
     problemTitle,
@@ -176,6 +240,7 @@ function parseProblemsJoin(problems: unknown): {
     problemGroupId: gid,
     problemGroupTitle,
     problemPrompt,
+    categoryTags,
   }
 }
 
@@ -418,7 +483,7 @@ export default async function AdminAttemptsHistoryPage({
   let attemptsQuery = supabase
     .from("problem_attempts")
     .select(
-      "id, created_at, is_correct, user_id, problem_id, answer_text, selected_option_ids, problems(title, type, position, prompt, problem_group_id, problem_groups(title))"
+      "id, created_at, is_correct, user_id, problem_id, answer_text, selected_option_ids, problems(title, type, position, prompt, tags, problem_group_id, problem_groups(title, tags))"
     )
     .eq("organization_id", organization.id)
     .gte("created_at", sixMonthsAgoIso())
@@ -458,6 +523,7 @@ export default async function AdminAttemptsHistoryPage({
       problemGroupId: parsed.problemGroupId,
       problemGroupTitle: parsed.problemGroupTitle,
       problemPrompt: parsed.problemPrompt,
+      categoryTags: parsed.categoryTags,
       answerText: r.answer_text,
       selectedOptionIds,
     }
@@ -512,6 +578,11 @@ export default async function AdminAttemptsHistoryPage({
   const ratePercent =
     gradedCount === 0 ? null : Math.round((correctCount / gradedCount) * 1000) / 10
 
+  const filteredUserLabel = filterUserId ? displayForUser(filterUserId) : null
+  const topCategoryIncorrectRates = filterUserId
+    ? computeTopCategoryIncorrectRates(attempts, 3)
+    : []
+
   return (
     <div className="space-y-6">
       <Card>
@@ -558,6 +629,49 @@ export default async function AdminAttemptsHistoryPage({
           </div>
         </CardContent>
       </Card>
+
+      {filterUserId ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>カテゴリ別 不正解率 TOP3</CardTitle>
+            <CardDescription>
+              {filteredUserLabel} の表示中データ（直近6ヶ月・採点済みのみ）から自動集計しています。
+              小問タグがなければ大問タグを使います。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {topCategoryIncorrectRates.length === 0 ? (
+              <p className="text-sm text-cream-700">
+                カテゴリタグ付きの採点済み解答がまだありません。
+              </p>
+            ) : (
+              <ol className="space-y-3">
+                {topCategoryIncorrectRates.map((row, index) => (
+                  <li
+                    key={row.tag}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-200 px-4 py-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-semibold text-cream-900 shadow-sm">
+                        {index + 1}
+                      </span>
+                      <span className="truncate font-medium text-cream-900">{row.tag}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-cream-900">
+                        不正解率 {row.incorrectRatePercent}%
+                      </p>
+                      <p className="text-xs text-cream-700">
+                        不正解 {row.incorrectCount} / 採点済み {row.gradedCount}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
