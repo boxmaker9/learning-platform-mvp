@@ -47,6 +47,7 @@ export default function GroupProblemForm({
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [tagsTextInput, setTagsTextInput] = useState("")
   const [queue, setQueue] = useState<ProblemFormValues[]>([])
   const [queueError, setQueueError] = useState<string | null>(null)
   const [isQueueSaving, setIsQueueSaving] = useState(false)
@@ -126,8 +127,23 @@ export default function GroupProblemForm({
     }, 0)
   }
 
+  const parseTagsFromText = (raw: string) =>
+    Array.from(new Set(raw.split(",").map((t) => t.trim()).filter(Boolean)))
+
+  const syncTagsFromInput = () => {
+    const tags = parseTagsFromText(tagsTextInput)
+    setValue("tags", tags, { shouldValidate: true })
+    return tags
+  }
+
+  const resetFormFields = () => {
+    reset(defaultValues)
+    setTagsTextInput("")
+  }
+
   const buildCreatePayload = (values: ProblemFormValues): ProblemFormValues => ({
     ...values,
+    tags: values.tags ?? [],
     // Route の大問IDを必ず送る（RHF の submit に groupId が含まれないと problem_group_id が null になる）
     groupId: (groupId || values.groupId || "") as ProblemFormValues["groupId"],
   })
@@ -148,26 +164,30 @@ export default function GroupProblemForm({
         throw new Error(payload.detail ?? payload.message ?? "保存に失敗しました。")
       }
 
-      reset(defaultValues)
+      resetFormFields()
       setSubmitSuccess(true)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "通信エラーが発生しました。")
     }
   }
 
-  const onSubmit = handleSubmit(saveOne)
+  const onSubmit = handleSubmit((values) => {
+    syncTagsFromInput()
+    return saveOne({ ...values, tags: parseTagsFromText(tagsTextInput) })
+  })
 
   const addToQueue = async () => {
     setQueueError(null)
     setSubmitSuccess(false)
+    syncTagsFromInput()
     const ok = await trigger()
     if (!ok) {
       setQueueError("入力内容を確認してください。")
       return
     }
     const values = getValues()
-    setQueue((prev) => [...prev, values])
-    reset(defaultValues)
+    setQueue((prev) => [...prev, { ...values, tags: parseTagsFromText(tagsTextInput) }])
+    resetFormFields()
   }
 
   const saveQueue = async () => {
@@ -234,6 +254,25 @@ export default function GroupProblemForm({
                   {errors.prompt.message}
                 </p>
               ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tagsText">カテゴリタグ (任意)</Label>
+              <Input
+                id="tagsText"
+                placeholder="例: ネットワーク, 基礎, SB"
+                value={tagsTextInput}
+                onChange={(event) => setTagsTextInput(event.currentTarget.value)}
+                onBlur={() => {
+                  syncTagsFromInput()
+                }}
+              />
+              {errors.tags ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {errors.tags.message as string}
+                </p>
+              ) : null}
+              <p className="text-xs text-cream-700">カンマ区切りで複数指定できます。</p>
             </div>
 
             <fieldset className="space-y-3" aria-describedby="type-help">
@@ -467,6 +506,15 @@ export default function GroupProblemForm({
                   <div className="min-w-0">
                     <p className="truncate font-medium">{q.title}</p>
                     <p className="text-xs text-cream-700">{typeLabels[q.type]}</p>
+                    {q.tags && q.tags.length > 0 ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {q.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px]">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <Button
                     type="button"
@@ -500,6 +548,15 @@ export default function GroupProblemForm({
               <Badge>{typeLabels[watch("type")]}</Badge>
               <span className="text-xs text-cream-700">Preview</span>
             </div>
+            {parseTagsFromText(tagsTextInput).length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {parseTagsFromText(tagsTextInput).map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
             <div>
               <h2 className="text-lg font-semibold">
                 {watch("title") ? watch("title") : "タイトル未入力"}

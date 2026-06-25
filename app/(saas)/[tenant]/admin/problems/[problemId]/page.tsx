@@ -141,15 +141,20 @@ export default async function AdminProblemDetailPage({
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {Array.isArray((problem as any).tags) && (problem as any).tags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {((problem as any).tags as string[]).map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
+          <div>
+            <p className="text-sm font-medium text-cream-900">カテゴリタグ</p>
+            {Array.isArray(problem.tags) && problem.tags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {problem.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-cream-700">（未設定）</p>
+            )}
+          </div>
           <div>
             <p className="text-sm font-medium text-cream-900">問題文</p>
             <p className="mt-1 whitespace-pre-wrap text-sm text-cream-900">
