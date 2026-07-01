@@ -25,11 +25,11 @@ type AttemptRow = {
   userAnswerDisplay: string
 }
 
-type CategoryIncorrectRate = {
+type CategoryCorrectRate = {
   tag: string
-  incorrectCount: number
+  correctCount: number
   gradedCount: number
-  incorrectRatePercent: number
+  correctRatePercent: number
 }
 
 /** 大問の1回分（受講者が大問を通しで解いた単位） */
@@ -137,36 +137,36 @@ function effectiveCategoryTags(problemTags: string[], groupTags: string[]): stri
   return groupTags
 }
 
-function computeTopCategoryIncorrectRates(
+function computeTopCategoryLowCorrectRates(
   attempts: AttemptRow[],
   limit = 3
-): CategoryIncorrectRate[] {
-  const statsByTag = new Map<string, { incorrect: number; graded: number }>()
+): CategoryCorrectRate[] {
+  const statsByTag = new Map<string, { correct: number; graded: number }>()
 
   for (const attempt of attempts) {
     if (attempt.is_correct === null || attempt.is_correct === undefined) continue
     if (attempt.categoryTags.length === 0) continue
 
     for (const tag of attempt.categoryTags) {
-      const current = statsByTag.get(tag) ?? { incorrect: 0, graded: 0 }
+      const current = statsByTag.get(tag) ?? { correct: 0, graded: 0 }
       current.graded += 1
-      if (attempt.is_correct === false) {
-        current.incorrect += 1
+      if (attempt.is_correct === true) {
+        current.correct += 1
       }
       statsByTag.set(tag, current)
     }
   }
 
   return Array.from(statsByTag.entries())
-    .map(([tag, { incorrect, graded }]) => ({
+    .map(([tag, { correct, graded }]) => ({
       tag,
-      incorrectCount: incorrect,
+      correctCount: correct,
       gradedCount: graded,
-      incorrectRatePercent: Math.round((incorrect / graded) * 1000) / 10,
+      correctRatePercent: Math.round((correct / graded) * 1000) / 10,
     }))
     .sort((a, b) => {
-      if (b.incorrectRatePercent !== a.incorrectRatePercent) {
-        return b.incorrectRatePercent - a.incorrectRatePercent
+      if (a.correctRatePercent !== b.correctRatePercent) {
+        return a.correctRatePercent - b.correctRatePercent
       }
       if (b.gradedCount !== a.gradedCount) {
         return b.gradedCount - a.gradedCount
@@ -579,8 +579,8 @@ export default async function AdminAttemptsHistoryPage({
     gradedCount === 0 ? null : Math.round((correctCount / gradedCount) * 1000) / 10
 
   const filteredUserLabel = filterUserId ? displayForUser(filterUserId) : null
-  const topCategoryIncorrectRates = filterUserId
-    ? computeTopCategoryIncorrectRates(attempts, 3)
+  const topCategoryLowCorrectRates = filterUserId
+    ? computeTopCategoryLowCorrectRates(attempts, 3)
     : []
 
   return (
@@ -633,20 +633,20 @@ export default async function AdminAttemptsHistoryPage({
       {filterUserId ? (
         <Card>
           <CardHeader>
-            <CardTitle>カテゴリ別 不正解率 TOP3</CardTitle>
+            <CardTitle>カテゴリ別 低正答率 TOP3</CardTitle>
             <CardDescription>
-              {filteredUserLabel} の表示中データ（直近6ヶ月・採点済みのみ）から自動集計しています。
+              {filteredUserLabel} の表示中データ（直近6ヶ月・採点済みのみ）から、正答率が低いカテゴリを自動集計しています。
               小問タグがなければ大問タグを使います。
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {topCategoryIncorrectRates.length === 0 ? (
+            {topCategoryLowCorrectRates.length === 0 ? (
               <p className="text-sm text-cream-700">
                 カテゴリタグ付きの採点済み解答がまだありません。
               </p>
             ) : (
               <ol className="space-y-3">
-                {topCategoryIncorrectRates.map((row, index) => (
+                {topCategoryLowCorrectRates.map((row, index) => (
                   <li
                     key={row.tag}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-200 px-4 py-3"
@@ -659,10 +659,10 @@ export default async function AdminAttemptsHistoryPage({
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-semibold text-cream-900">
-                        不正解率 {row.incorrectRatePercent}%
+                        正答率 {row.correctRatePercent}%
                       </p>
                       <p className="text-xs text-cream-700">
-                        不正解 {row.incorrectCount} / 採点済み {row.gradedCount}
+                        正解 {row.correctCount} / 採点済み {row.gradedCount}
                       </p>
                     </div>
                   </li>
