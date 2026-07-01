@@ -3,6 +3,7 @@ import Link from "next/link"
 import AttemptHistorySection, { type HistoryListEntry } from "./AttemptHistoryList"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { listOrganizationUsers, userIdentifier } from "@/lib/admin/listOrganizationUsers"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -59,12 +60,6 @@ type GroupSessionListItem = {
 }
 
 type HistoryListItem = StandaloneAttemptItem | GroupSessionListItem
-
-type ProfileRow = {
-  user_id: string
-  login_id: string
-  display_name: string | null
-}
 
 function sixMonthsAgoIso() {
   const d = new Date()
@@ -452,25 +447,9 @@ export default async function AdminAttemptsHistoryPage({
     )
   }
 
-  const { data: studentMembers } = await supabase
-    .from("organization_members")
-    .select("user_id")
-    .eq("organization_id", organization.id)
-    .eq("role", "student")
-
-  const studentIds = (studentMembers ?? []).map((m) => m.user_id).filter(Boolean)
-
-  let profiles: ProfileRow[] = []
-  if (studentIds.length > 0) {
-    const { data: profs } = await supabase
-      .from("user_profiles")
-      .select("user_id, login_id, display_name")
-      .eq("organization_id", organization.id)
-      .in("user_id", studentIds)
-    profiles = (profs ?? []) as ProfileRow[]
-  }
-
-  const profileByUserId = new Map(profiles.map((p) => [p.user_id, p]))
+  const users = await listOrganizationUsers(organization.id)
+  const filterableUserIds = users.map((u) => u.user_id)
+  const userByUserId = new Map(users.map((u) => [u.user_id, u]))
 
   const rawUserId =
     typeof searchParams?.userId === "string" && searchParams.userId.trim().length > 0
@@ -478,7 +457,9 @@ export default async function AdminAttemptsHistoryPage({
       : ""
 
   const filterUserId =
-    rawUserId && UUID_RE.test(rawUserId) && studentIds.includes(rawUserId) ? rawUserId : ""
+    rawUserId && UUID_RE.test(rawUserId) && filterableUserIds.includes(rawUserId)
+      ? rawUserId
+      : ""
 
   let attemptsQuery = supabase
     .from("problem_attempts")
@@ -557,10 +538,12 @@ export default async function AdminAttemptsHistoryPage({
   }))
 
   const displayForUser = (uid: string) => {
-    const p = profileByUserId.get(uid)
-    if (p?.display_name?.trim()) return `${p.display_name} (${p.login_id})`
-    if (p) return p.login_id
-    return uid.slice(0, 8) + "…"
+    const user = userByUserId.get(uid)
+    if (!user) return uid.slice(0, 8) + "…"
+    const id = userIdentifier(user)
+    const rolePrefix = user.role === "admin" ? "管理者 " : ""
+    if (user.display_name?.trim()) return `${rolePrefix}${user.display_name}（${id}）`
+    return `${rolePrefix}${id}`
   }
 
   const historyItems = buildHistoryList(attempts)
@@ -675,14 +658,14 @@ export default async function AdminAttemptsHistoryPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>受講者で絞り込み</CardTitle>
+          <CardTitle>ユーザーで絞り込み</CardTitle>
           <CardDescription>GET フォームで URL が変わります。ブックマークしやすい形です。</CardDescription>
         </CardHeader>
         <CardContent>
           <form method="get" className="flex flex-wrap items-end gap-3">
             <div className="min-w-[220px] flex-1 space-y-1">
               <label htmlFor="userId" className="text-xs font-medium text-cream-800">
-                受講者
+                ユーザー
               </label>
               <select
                 id="userId"
@@ -690,12 +673,20 @@ export default async function AdminAttemptsHistoryPage({
                 defaultValue={filterUserId}
                 className="w-full rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
               >
-                <option value="">すべての受講者</option>
-                {profiles.map((p) => (
-                  <option key={p.user_id} value={p.user_id}>
-                    {p.display_name?.trim() ? `${p.display_name} (${p.login_id})` : p.login_id}
-                  </option>
-                ))}
+                <option value="">すべてのユーザー</option>
+                {users.map((user) => {
+                  const id = userIdentifier(user)
+                  const label = user.display_name?.trim()
+                    ? `${user.display_name}（${id}）`
+                    : id
+                  const prefix = user.role === "admin" ? "[管理者] " : ""
+                  return (
+                    <option key={user.user_id} value={user.user_id}>
+                      {prefix}
+                      {label}
+                    </option>
+                  )
+                })}
               </select>
             </div>
             <Button type="submit">適用</Button>
