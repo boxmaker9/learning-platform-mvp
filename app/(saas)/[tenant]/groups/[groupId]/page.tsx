@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { effectiveCategoryTags, parseStringArray } from "@/lib/problems/categoryTags"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import GroupAttemptRunner, { type GroupProblem } from "./GroupAttemptRunner"
@@ -70,7 +71,7 @@ export default async function GroupAttemptPage({
 
   const { data: group } = await supabase
     .from("problem_groups")
-    .select("id,title")
+    .select("id,title,tags")
     .eq("organization_id", organization.id)
     .eq("id", params.groupId)
     .single()
@@ -88,7 +89,7 @@ export default async function GroupAttemptPage({
 
   const { data: problems } = await supabase
     .from("problems")
-    .select("id,title,prompt,type,position,explanation,answer_text")
+    .select("id,title,prompt,type,position,explanation,answer_text,tags")
     .eq("organization_id", organization.id)
     .eq("problem_group_id", group.id)
     .order("position", { ascending: true })
@@ -112,6 +113,8 @@ export default async function GroupAttemptPage({
     optionsByProblem.set(row.problem_id, list)
   })
 
+  const groupTags = parseStringArray(group.tags)
+
   const packed: GroupProblem[] = (problems ?? []).map((p) => {
     const opts = optionsByProblem.get(p.id) ?? []
     return {
@@ -120,6 +123,7 @@ export default async function GroupAttemptPage({
       prompt: p.prompt ?? null,
       explanation: p.explanation ?? null,
       type: p.type,
+      categoryTags: effectiveCategoryTags(parseStringArray(p.tags), groupTags),
       modelAnswerDisplay: modelAnswerDisplayForProblem(
         p.type,
         p.answer_text ?? null,

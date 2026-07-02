@@ -12,6 +12,7 @@ export type HistorySubQuestion = {
   id: string
   title: string
   problemPrompt: string | null
+  categoryTags: string[]
   userAnswerDisplay: string
   isCorrect: boolean | null
 }
@@ -206,6 +207,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                       <AttemptSubQuestionRow
                         title={row.title}
                         problemPrompt={row.problemPrompt}
+                        categoryTags={row.categoryTags}
                         userAnswerDisplay={row.userAnswerDisplay}
                         isCorrect={row.isCorrect}
                       />
@@ -259,6 +261,7 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                         key={row.id}
                         title={row.title}
                         problemPrompt={row.problemPrompt}
+                        categoryTags={row.categoryTags}
                         userAnswerDisplay={row.userAnswerDisplay}
                         isCorrect={row.isCorrect}
                       />

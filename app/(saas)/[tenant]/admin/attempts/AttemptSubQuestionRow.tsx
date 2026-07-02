@@ -1,8 +1,11 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
+
 type AttemptSubQuestionRowProps = {
   title: string
   problemPrompt: string | null
+  categoryTags: string[]
   userAnswerDisplay: string
   isCorrect: boolean | null
 }
@@ -20,6 +23,7 @@ function ResultMark({ isCorrect }: { isCorrect: boolean | null }) {
 export default function AttemptSubQuestionRow({
   title,
   problemPrompt,
+  categoryTags,
   userAnswerDisplay,
   isCorrect,
 }: AttemptSubQuestionRowProps) {
@@ -30,6 +34,20 @@ export default function AttemptSubQuestionRow({
         <ResultMark isCorrect={isCorrect} />
       </summary>
       <div className="space-y-3 border-t border-cream-200 bg-cream-50 px-3 py-3 text-sm">
+        <div>
+          <p className="mb-1 text-xs font-semibold text-slate-500">カテゴリ</p>
+          {categoryTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {categoryTags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-700">（未設定）</p>
+          )}
+        </div>
         <div>
           <p className="mb-1 text-xs font-semibold text-slate-500">問題文</p>
           <p className="whitespace-pre-wrap text-slate-900">

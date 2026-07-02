@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { X } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -23,6 +24,7 @@ export type GroupProblem = {
   prompt: string | null
   explanation: string | null
   type: "single_choice" | "multiple_choice" | "text"
+  categoryTags: string[]
   modelAnswerDisplay: string
   options: ProblemOption[]
 }
@@ -50,6 +52,25 @@ function userPickedOption(
     return Boolean(submitted.selectedOptionIds?.[optionId])
   }
   return false
+}
+
+function CategoryTagsBlock({ tags }: { tags: string[] }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold text-cream-700">カテゴリ</p>
+      {tags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-cream-700">（未設定）</p>
+      )}
+    </div>
+  )
 }
 
 function AnswerResultMark({ isCorrect }: { isCorrect: boolean | null | undefined }) {
@@ -155,6 +176,9 @@ export default function GroupAttemptRunner({
                       {i + 1}. {p.title}
                     </span>
                   </h3>
+                  <div className="mt-3">
+                    <CategoryTagsBlock tags={p.categoryTags} />
+                  </div>
                   {p.prompt ? (
                     <div className="mt-3 rounded-md border border-cream-200 bg-cream-100/80 px-3 py-2">
                       <p className="mb-1 text-xs font-semibold text-cream-700">問題文</p>
@@ -258,6 +282,9 @@ export default function GroupAttemptRunner({
       <Card>
         <CardHeader>
           <CardTitle>{current.title}</CardTitle>
+          <div className="pt-1">
+            <CategoryTagsBlock tags={current.categoryTags} />
+          </div>
           {current.prompt ? (
             <CardDescription className="whitespace-pre-wrap">{current.prompt}</CardDescription>
           ) : null}
