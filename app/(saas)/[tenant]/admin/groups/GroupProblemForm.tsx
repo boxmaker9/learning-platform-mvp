@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
-import { Eye, Plus, Trash2 } from "lucide-react"
+import { Eye, History, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,73 @@ const baseDefaultValues: ProblemFormValues = {
   explanation: "",
 }
 
+function ProblemPreviewPanel({ values }: { values: ProblemFormValues }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Badge>{typeLabels[values.type]}</Badge>
+      </div>
+
+      {values.tags && values.tags.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {values.tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+
+      <div>
+        <h2 className="text-lg font-semibold">{values.title || "タイトル未入力"}</h2>
+        <p className="mt-2 whitespace-pre-wrap text-sm text-cream-800">
+          {values.prompt || "問題文がまだ入力されていません。"}
+        </p>
+      </div>
+
+      {values.type === "text" ? (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">模範解答</p>
+          <p className="whitespace-pre-wrap text-sm text-cream-800">
+            {values.textAnswer?.trim() ? values.textAnswer : "（未入力）"}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm font-medium">選択肢</p>
+          <ul className="space-y-2">
+            {values.options.length === 0 ? (
+              <li className="text-sm text-cream-700">選択肢がありません。</li>
+            ) : (
+              values.options.map((option, index) => (
+                <li
+                  key={`${option.label}-${index}`}
+                  className="flex items-center gap-2 rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
+                >
+                  <span className="font-medium">{index + 1}.</span>
+                  <span>{option.label || "未入力の選択肢"}</span>
+                  {option.isCorrect ? (
+                    <Badge variant="secondary" className="ml-auto">
+                      正解
+                    </Badge>
+                  ) : null}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
+
+      {values.explanation ? (
+        <div className="rounded-md border border-cream-300 bg-cream-200 p-3 text-xs text-cream-800">
+          <p className="mb-1 font-semibold">解説</p>
+          <p className="whitespace-pre-wrap">{values.explanation}</p>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export default function GroupProblemForm({
   tenant,
   groupId,
@@ -48,6 +115,7 @@ export default function GroupProblemForm({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [tagsTextInput, setTagsTextInput] = useState("")
+  const [previousProblem, setPreviousProblem] = useState<ProblemFormValues | null>(null)
   const [queue, setQueue] = useState<ProblemFormValues[]>([])
   const [queueError, setQueueError] = useState<string | null>(null)
   const [isQueueSaving, setIsQueueSaving] = useState(false)
@@ -80,6 +148,44 @@ export default function GroupProblemForm({
   useEffect(() => {
     setValue("groupId", groupId, { shouldValidate: true })
   }, [groupId, setValue])
+
+  useEffect(() => {
+    if (!tenant || !groupId) {
+      setPreviousProblem(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadLatest = async () => {
+      try {
+        const response = await fetch(
+          `/api/tenants/${tenant}/groups/${groupId}/problems/latest`
+        )
+        if (!response.ok) return
+        const payload = (await response.json()) as { problem?: ProblemFormValues | null }
+        if (!cancelled && payload.problem) {
+          setPreviousProblem(payload.problem)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    void loadLatest()
+
+    return () => {
+      cancelled = true
+    }
+  }, [tenant, groupId])
+
+  const rememberAsPrevious = (values: ProblemFormValues) => {
+    setPreviousProblem({
+      ...values,
+      groupId: (groupId || values.groupId || "") as ProblemFormValues["groupId"],
+      tags: values.tags ?? [],
+    })
+  }
 
   const { fields, append, remove, replace } = useFieldArray({
     control,
@@ -164,6 +270,7 @@ export default function GroupProblemForm({
         throw new Error(payload.detail ?? payload.message ?? "保存に失敗しました。")
       }
 
+      rememberAsPrevious({ ...values, tags: values.tags ?? [] })
       resetFormFields()
       setSubmitSuccess(true)
     } catch (error) {
@@ -186,7 +293,9 @@ export default function GroupProblemForm({
       return
     }
     const values = getValues()
-    setQueue((prev) => [...prev, { ...values, tags: parseTagsFromText(tagsTextInput) }])
+    const nextValues = { ...values, tags: parseTagsFromText(tagsTextInput) }
+    setQueue((prev) => [...prev, nextValues])
+    rememberAsPrevious(nextValues)
     resetFormFields()
   }
 
@@ -211,7 +320,26 @@ export default function GroupProblemForm({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-8 xl:grid-cols-[minmax(280px,340px)_minmax(0,1fr)_minmax(280px,360px)]">
+      <Card className="h-fit xl:sticky xl:top-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" aria-hidden="true" />
+            直前の小問
+          </CardTitle>
+          <CardDescription>1つ前に作成・保存した小問の内容です。</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {previousProblem ? (
+            <ProblemPreviewPanel values={previousProblem} />
+          ) : (
+            <p className="text-sm text-cream-700">
+              まだ直前の小問がありません。1問目を保存するとここに表示されます。
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>小問を作成</CardTitle>
@@ -490,6 +618,7 @@ export default function GroupProblemForm({
         </CardContent>
       </Card>
 
+      <div className="space-y-8">
       {queue.length > 0 ? (
         <Card>
           <CardHeader>
@@ -548,26 +677,16 @@ export default function GroupProblemForm({
               <Badge>{typeLabels[watch("type")]}</Badge>
               <span className="text-xs text-cream-700">Preview</span>
             </div>
-            {parseTagsFromText(tagsTextInput).length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {parseTagsFromText(tagsTextInput).map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-            <div>
-              <h2 className="text-lg font-semibold">
-                {watch("title") ? watch("title") : "タイトル未入力"}
-              </h2>
-              <p className="mt-2 text-sm text-cream-800">
-                {watch("prompt") ? watch("prompt") : "問題文がまだ入力されていません。"}
-              </p>
-            </div>
+            <ProblemPreviewPanel
+              values={{
+                ...watch(),
+                tags: parseTagsFromText(tagsTextInput),
+              }}
+            />
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
