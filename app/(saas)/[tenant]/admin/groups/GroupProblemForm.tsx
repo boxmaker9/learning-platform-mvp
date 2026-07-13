@@ -320,8 +320,8 @@ export default function GroupProblemForm({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(200px,240px)_minmax(0,1fr)] lg:items-start">
-      <Card className="h-fit lg:sticky lg:top-6 lg:-ml-3 xl:-ml-6">
+    <div className="space-y-6">
+      <Card className="max-w-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <History className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -342,8 +342,8 @@ export default function GroupProblemForm({
         </CardContent>
       </Card>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] xl:items-start">
-      <Card className="min-w-0">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <Card>
         <CardHeader>
           <CardTitle>小問を作成</CardTitle>
           <CardDescription>
@@ -621,7 +621,6 @@ export default function GroupProblemForm({
         </CardContent>
       </Card>
 
-      <div className="space-y-6 xl:sticky xl:top-6">
       {queue.length > 0 ? (
         <Card>
           <CardHeader>
@@ -689,8 +688,7 @@ export default function GroupProblemForm({
           </div>
         </CardContent>
       </Card>
-      </div>
-      </div>
+    </div>
     </div>
   )
 }
