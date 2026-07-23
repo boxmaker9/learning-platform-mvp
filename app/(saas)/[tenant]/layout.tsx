@@ -18,6 +18,7 @@ const adminItems = [
 
 const studentItems = [
   { label: "問題を解く", href: "problems" },
+  { label: "解答履歴", href: "attempts" },
 ]
 
 export default async function TenantLayout({

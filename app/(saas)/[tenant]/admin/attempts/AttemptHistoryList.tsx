@@ -7,33 +7,14 @@ import AttemptSubQuestionRow from "./AttemptSubQuestionRow"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import type { HistoryListEntry } from "@/lib/attempts/history"
 
-export type HistorySubQuestion = {
-  id: string
-  title: string
-  problemPrompt: string | null
-  categoryTags: string[]
-  userAnswerDisplay: string
-  isCorrect: boolean | null
-}
-
-export type HistoryListEntry = {
-  key: string
-  kind: "standalone" | "group_session"
-  attemptIds: string[]
-  deleteLabel: string
-  subQuestions: HistorySubQuestion[]
-  groupTitle?: string
-  sessionDate?: string
-  userLabel?: string
-  scoreCorrect?: number
-  scoreTotal?: number
-  standaloneDate?: string
-}
+export type { HistoryListEntry, HistorySubQuestion } from "@/lib/attempts/history"
 
 type AttemptHistorySectionProps = {
   tenant: string
   entries: HistoryListEntry[]
+  allowDelete?: boolean
 }
 
 function stopToggle(event: React.MouseEvent) {
@@ -41,7 +22,11 @@ function stopToggle(event: React.MouseEvent) {
   event.stopPropagation()
 }
 
-export default function AttemptHistorySection({ tenant, entries }: AttemptHistorySectionProps) {
+export default function AttemptHistorySection({
+  tenant,
+  entries,
+  allowDelete = true,
+}: AttemptHistorySectionProps) {
   const router = useRouter()
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -121,9 +106,12 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
         <div className="space-y-1">
           <CardTitle>履歴一覧</CardTitle>
           <CardDescription>
-            大問は「1回の挑戦」ごとに1行表示します。「履歴削除」を押すと選択モードになり、個別または複数の履歴を選んで削除できます。大問を選ぶとその回の小問すべてが削除されます。日時は日本時間（Asia/Tokyo）です。
+            {allowDelete
+              ? "大問は「1回の挑戦」ごとに1行表示します。「履歴削除」を押すと選択モードになり、個別または複数の履歴を選んで削除できます。大問を選ぶとその回の小問すべてが削除されます。日時は日本時間（Asia/Tokyo）です。"
+              : "大問は「1回の挑戦」ごとに1行表示します。日時は日本時間（Asia/Tokyo）です。"}
           </CardDescription>
         </div>
+        {allowDelete ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {selectionMode ? (
             <>
@@ -151,13 +139,14 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
             </Button>
           )}
         </div>
+        ) : null}
       </CardHeader>
       <CardContent className="overflow-x-auto">
         {entries.length === 0 ? (
           <p className="text-sm text-cream-700">該当する解答履歴がありません。</p>
         ) : (
           <div className="space-y-3">
-            {selectionMode ? (
+            {allowDelete && selectionMode ? (
               <div className="flex flex-wrap items-center gap-3 rounded-md border border-red-100 bg-red-50/50 px-3 py-2">
                 <label className="flex items-center gap-2 text-sm text-cream-900">
                   <Checkbox
@@ -180,14 +169,14 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                   <div
                     key={entry.key}
                     className={
-                      selectionMode && checked
+                      allowDelete && selectionMode && checked
                         ? "rounded-md border border-red-200 bg-red-50/30 px-3 py-2"
                         : "rounded-md border border-cream-300 bg-white px-3 py-2"
                     }
                   >
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-xs text-cream-800">
-                        {selectionMode ? (
+                        {allowDelete && selectionMode ? (
                           <Checkbox
                             checked={checked}
                             onCheckedChange={(value) => toggleKey(entry.key, value === true)}
@@ -220,13 +209,13 @@ export default function AttemptHistorySection({ tenant, entries }: AttemptHistor
                 <details
                   key={entry.key}
                   className={
-                    selectionMode && checked
+                    allowDelete && selectionMode && checked
                       ? "group rounded-md border border-red-200 bg-red-50/30 open:shadow-sm"
                       : "group rounded-md border border-cream-300 bg-white open:shadow-sm"
                   }
                 >
                   <summary className="flex cursor-pointer list-none items-center gap-2 whitespace-nowrap px-4 py-3 text-sm hover:bg-cream-100 [&::-webkit-details-marker]:hidden">
-                    {selectionMode ? (
+                    {allowDelete && selectionMode ? (
                       <span onClick={stopToggle} onKeyDown={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={checked}
