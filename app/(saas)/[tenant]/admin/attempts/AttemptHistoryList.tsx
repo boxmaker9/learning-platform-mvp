@@ -198,6 +198,8 @@ export default function AttemptHistorySection({
                         problemPrompt={row.problemPrompt}
                         categoryTags={row.categoryTags}
                         userAnswerDisplay={row.userAnswerDisplay}
+                        modelAnswerDisplay={row.modelAnswerDisplay}
+                        explanation={row.explanation}
                         isCorrect={row.isCorrect}
                       />
                     ) : null}
@@ -252,6 +254,8 @@ export default function AttemptHistorySection({
                         problemPrompt={row.problemPrompt}
                         categoryTags={row.categoryTags}
                         userAnswerDisplay={row.userAnswerDisplay}
+                        modelAnswerDisplay={row.modelAnswerDisplay}
+                        explanation={row.explanation}
                         isCorrect={row.isCorrect}
                       />
                     ))}

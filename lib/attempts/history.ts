@@ -6,6 +6,8 @@ export type HistorySubQuestion = {
   problemPrompt: string | null
   categoryTags: string[]
   userAnswerDisplay: string
+  modelAnswerDisplay: string
+  explanation: string | null
   isCorrect: boolean | null
 }
 
@@ -39,6 +41,12 @@ type AttemptRow = {
   answerText: string | null
   selectedOptionIds: string[]
   userAnswerDisplay: string
+  modelAnswerDisplay: string
+  explanation: string | null
+}
+
+type AttemptBaseRow = Omit<AttemptRow, "userAnswerDisplay" | "modelAnswerDisplay"> & {
+  problemAnswerText: string | null
 }
 
 type CategoryCorrectRate = {
@@ -193,6 +201,19 @@ function computeTopCategoryLowCorrectRates(
     .slice(0, limit)
 }
 
+function modelAnswerDisplayForProblem(
+  type: AttemptRow["problemType"],
+  problemAnswerText: string | null,
+  correctOptionLabels: string[]
+): string {
+  if (type === "text") {
+    const t = problemAnswerText?.trim() ?? ""
+    return t.length > 0 ? t : "（模範解答が未設定です）"
+  }
+  if (correctOptionLabels.length === 0) return "（正解の選択肢が未設定です）"
+  return correctOptionLabels.join("・")
+}
+
 function parseProblemsJoin(problems: unknown): {
   problemTitle: string
   problemType: AttemptRow["problemType"]
@@ -201,6 +222,8 @@ function parseProblemsJoin(problems: unknown): {
   problemGroupTitle: string | null
   problemPrompt: string | null
   categoryTags: string[]
+  problemAnswerText: string | null
+  explanation: string | null
 } {
   const row = firstRelationRow<{
     title?: unknown
@@ -208,6 +231,8 @@ function parseProblemsJoin(problems: unknown): {
     position?: unknown
     prompt?: unknown
     tags?: unknown
+    answer_text?: unknown
+    explanation?: unknown
     problem_group_id?: unknown
     problem_groups?: unknown
   }>(problems)
@@ -221,6 +246,8 @@ function parseProblemsJoin(problems: unknown): {
       problemGroupTitle: null,
       problemPrompt: null,
       categoryTags: [],
+      problemAnswerText: null,
+      explanation: null,
     }
   }
 
@@ -236,6 +263,8 @@ function parseProblemsJoin(problems: unknown): {
     typeof row.position === "number" && Number.isFinite(row.position) ? row.position : 0
 
   const problemPrompt = typeof row.prompt === "string" ? row.prompt : null
+  const problemAnswerText = typeof row.answer_text === "string" ? row.answer_text : null
+  const explanation = typeof row.explanation === "string" ? row.explanation : null
 
   const gid =
     typeof row.problem_group_id === "string" && row.problem_group_id.length > 0
@@ -258,6 +287,21 @@ function parseProblemsJoin(problems: unknown): {
     problemGroupTitle,
     problemPrompt,
     categoryTags,
+    problemAnswerText,
+    explanation,
+  }
+}
+
+function subQuestionFromAttempt(row: AttemptRow): HistorySubQuestion {
+  return {
+    id: row.id,
+    title: row.problemTitle,
+    problemPrompt: row.problemPrompt,
+    categoryTags: row.categoryTags,
+    userAnswerDisplay: row.userAnswerDisplay,
+    modelAnswerDisplay: row.modelAnswerDisplay,
+    explanation: row.explanation,
+    isCorrect: row.is_correct,
   }
 }
 
@@ -369,16 +413,7 @@ function toHistoryListEntries(
         deleteLabel: row.problemTitle,
         standaloneDate: formatJaDateFn(row.created_at),
         userLabel: hideUserLabels ? undefined : displayForUser(row.user_id),
-        subQuestions: [
-          {
-            id: row.id,
-            title: row.problemTitle,
-            problemPrompt: row.problemPrompt,
-            categoryTags: row.categoryTags,
-            userAnswerDisplay: row.userAnswerDisplay,
-            isCorrect: row.is_correct,
-          },
-        ],
+        subQuestions: [subQuestionFromAttempt(row)],
       }
     }
 
@@ -394,14 +429,7 @@ function toHistoryListEntries(
       userLabel: hideUserLabels ? undefined : displayForUser(session.userId),
       scoreCorrect: correct,
       scoreTotal: total,
-      subQuestions: session.attempts.map((row) => ({
-        id: row.id,
-        title: row.problemTitle,
-        problemPrompt: row.problemPrompt,
-        categoryTags: row.categoryTags,
-        userAnswerDisplay: row.userAnswerDisplay,
-        isCorrect: row.is_correct,
-      })),
+      subQuestions: session.attempts.map((row) => subQuestionFromAttempt(row)),
     }
   })
 }
@@ -419,7 +447,7 @@ export async function loadAttemptHistory(
   let attemptsQuery = supabase
     .from("problem_attempts")
     .select(
-      "id, created_at, is_correct, user_id, problem_id, answer_text, selected_option_ids, problems(title, type, position, prompt, tags, problem_group_id, problem_groups(title, tags))"
+      "id, created_at, is_correct, user_id, problem_id, answer_text, selected_option_ids, problems(title, type, position, prompt, tags, answer_text, explanation, problem_group_id, problem_groups(title, tags))"
     )
     .eq("organization_id", organizationId)
     .gte("created_at", sixMonthsAgoIso())
@@ -432,7 +460,7 @@ export async function loadAttemptHistory(
 
   const { data: attemptsRaw } = await attemptsQuery
 
-  const attemptsBase: Omit<AttemptRow, "userAnswerDisplay">[] = (attemptsRaw ?? []).map((row) => {
+  const attemptsBase: AttemptBaseRow[] = (attemptsRaw ?? []).map((row) => {
     const r = row as {
       id: string
       created_at: string
@@ -462,8 +490,32 @@ export async function loadAttemptHistory(
       categoryTags: parsed.categoryTags,
       answerText: r.answer_text,
       selectedOptionIds,
+      explanation: parsed.explanation,
+      problemAnswerText: parsed.problemAnswerText,
     }
   })
+
+  const allProblemIds = Array.from(new Set(attemptsBase.map((a) => a.problem_id)))
+  const correctLabelsByProblemId = new Map<string, string[]>()
+  if (allProblemIds.length > 0) {
+    const { data: allOptionsRaw } = await supabase
+      .from("problem_options")
+      .select("problem_id, label, is_correct, position")
+      .eq("organization_id", organizationId)
+      .in("problem_id", allProblemIds)
+      .order("position", { ascending: true })
+    for (const opt of allOptionsRaw ?? []) {
+      const o = opt as {
+        problem_id: string
+        label: string
+        is_correct: boolean
+      }
+      if (!o.is_correct || !o.label) continue
+      const list = correctLabelsByProblemId.get(o.problem_id) ?? []
+      list.push(o.label)
+      correctLabelsByProblemId.set(o.problem_id, list)
+    }
+  }
 
   const allOptionIds = Array.from(new Set(attemptsBase.flatMap((a) => a.selectedOptionIds)))
   const optionLabelById = new Map<string, string>()
@@ -487,6 +539,11 @@ export async function loadAttemptHistory(
       a.answerText,
       a.selectedOptionIds,
       optionLabelById
+    ),
+    modelAnswerDisplay: modelAnswerDisplayForProblem(
+      a.problemType,
+      a.problemAnswerText,
+      correctLabelsByProblemId.get(a.problem_id) ?? []
     ),
   }))
 
