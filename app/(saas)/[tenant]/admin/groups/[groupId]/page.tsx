@@ -1,17 +1,11 @@
 import Link from "next/link"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import DeleteGroupButton from "../../problems/DeleteGroupButton"
-
-const typeLabels: Record<string, string> = {
-  single_choice: "択一式",
-  multiple_choice: "複数選択",
-  text: "記述式",
-}
+import GroupProblemsReorderList from "./GroupProblemsReorderList"
 
 function formatDate(value: string | null) {
   if (!value) return "-"
@@ -136,32 +130,20 @@ export default async function AdminGroupDetailPage({
             <span className="min-w-0 truncate">{group.title}</span>
             <span className="text-xs text-cream-700">作成日: {formatDate(group.created_at)}</span>
           </CardTitle>
-          <CardDescription>この大問に含まれる小問一覧です。</CardDescription>
+          <CardDescription>小問の順番を変更できます。</CardDescription>
         </CardHeader>
         <CardContent>
           {problems && problems.length > 0 ? (
-            <div className="space-y-3">
-              {problems.map((problem) => (
-                <Link
-                  key={problem.id}
-                  href={`/${params.tenant}/admin/problems/${problem.id}`}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm transition hover:border-primary-200"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="min-w-0 truncate font-medium">
-                      {typeof problem.position === "number" ? `${problem.position + 1}. ` : ""}
-                      {problem.title}
-                    </p>
-                    <Badge variant="secondary">
-                      {typeLabels[problem.type] ?? problem.type}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-cream-700">
-                    作成日: {formatDate(problem.created_at)}
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <GroupProblemsReorderList
+              tenant={params.tenant}
+              groupId={group.id}
+              problems={(problems ?? []).map((problem) => ({
+                id: problem.id,
+                title: problem.title,
+                type: problem.type,
+                created_at: problem.created_at,
+              }))}
+            />
           ) : (
             <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               まだ小問がありません。「小問を追加」から追加してください。

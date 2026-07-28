@@ -1,11 +1,11 @@
 import Link from "next/link"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 import TagFilter from "../../problems/tag-filter"
+import GroupReorderList from "../problems/GroupReorderList"
 
 export default async function AdminGroupsPage({
   params,
@@ -82,7 +82,9 @@ export default async function AdminGroupsPage({
     groupsQuery = groupsQuery.contains("tags", [selectedGroupTag])
   }
 
-  const { data: groups } = await groupsQuery.order("created_at", { ascending: false })
+  const { data: groups } = await groupsQuery
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true })
 
   const groupIds = (groups ?? []).map((g) => g.id)
   const { data: groupedProblems } =
@@ -130,7 +132,7 @@ export default async function AdminGroupsPage({
       <Card>
         <CardHeader>
           <CardTitle>大問一覧</CardTitle>
-          <CardDescription>大問を選んで小問を追加できます。</CardDescription>
+          <CardDescription>大問の順番を変更できます。</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -150,44 +152,20 @@ export default async function AdminGroupsPage({
             htmlId="adminGroupTagFilter"
           />
           {groups && groups.length > 0 ? (
-            <div className="space-y-3">
-              {groups.map((group) => (
-                <div
-                  key={group.id}
-                  className="flex flex-col gap-2 rounded-md border border-cream-300 bg-white p-4 text-sm"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{group.title}</p>
-                      {"tags" in group && Array.isArray((group as any).tags) && (group as any).tags.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {((group as any).tags as string[]).slice(0, 6).map((tag) => (
-                            <Badge key={tag} variant="secondary">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                    <span className="shrink-0 text-xs text-cream-700">
-                      全{groupCountById.get(group.id) ?? 0}問
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-end">
-                    <div className="flex items-center gap-2">
-                      <Button asChild variant="secondary" size="sm">
-                        <Link href={`/${params.tenant}/admin/groups/${group.id}/edit`}>編集</Link>
-                      </Button>
-                      <Button asChild variant="secondary" size="sm">
-                        <Link href={`/${params.tenant}/admin/groups/${group.id}/problems/new`}>
-                          小問を追加
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <GroupReorderList
+              tenant={params.tenant}
+              reorderDisabled={Boolean(selectedGroupTag)}
+              showEditLink
+              groups={groups.map((group) => ({
+                id: group.id,
+                title: group.title,
+                created_at: group.created_at,
+                problemCount: groupCountById.get(group.id) ?? 0,
+                tags: Array.isArray((group as { tags?: string[] }).tags)
+                  ? ((group as { tags?: string[] }).tags ?? [])
+                  : [],
+              }))}
+            />
           ) : (
             <div className="rounded-md border border-dashed border-cream-300 p-6 text-sm text-cream-700">
               {selectedGroupTag

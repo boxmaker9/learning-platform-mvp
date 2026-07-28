@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache"
 import { NextResponse } from "next/server"
 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { nextGroupPosition } from "@/lib/admin/reorder"
 import { problemSchema } from "@/lib/validators/problem"
 
 export async function POST(
@@ -67,11 +68,13 @@ export async function POST(
     if (existingGroup?.id) {
       problemGroupId = existingGroup.id
     } else {
+      const position = await nextGroupPosition(supabase, organization.id)
       const { data: createdGroup, error: groupError } = await supabase
         .from("problem_groups")
         .insert({
           organization_id: organization.id,
           title: groupTitle,
+          position,
           created_by: userData.user.id,
         })
         .select("id")

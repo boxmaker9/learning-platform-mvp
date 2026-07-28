@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { nextGroupPosition } from "@/lib/admin/reorder"
 
 const createGroupSchema = z.object({
   title: z.string().min(1),
@@ -44,7 +45,8 @@ export async function GET(
     .from("problem_groups")
     .select("id,title,created_at,tags")
     .eq("organization_id", organization.id)
-    .order("created_at", { ascending: false })
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true })
 
   if (error) {
     return NextResponse.json({ message: "大問の取得に失敗しました。" }, { status: 500 })
@@ -99,6 +101,7 @@ export async function POST(
   const tags = Array.from(
     new Set((parsed.data.tags ?? []).map((t) => t.trim()).filter(Boolean))
   )
+  const position = await nextGroupPosition(supabase, organization.id)
 
   const { data: createdGroup, error } = await supabase
     .from("problem_groups")
@@ -106,6 +109,7 @@ export async function POST(
       organization_id: organization.id,
       title,
       tags,
+      position,
       created_by: userData.user.id,
     })
     .select("id")

@@ -93,7 +93,9 @@ export default async function StudentProblemsPage({
     groupsQuery = groupsQuery.contains("tags", [selectedGroupTag])
   }
 
-  const { data: groups } = await groupsQuery.order("created_at", { ascending: false })
+  const { data: groups } = await groupsQuery
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true })
 
   const groupIds = (groups ?? []).map((g) => g.id)
   const { data: groupedProblems } =
