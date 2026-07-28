@@ -1,6 +1,6 @@
 import AttemptHistorySection from "@/app/(saas)/[tenant]/admin/attempts/AttemptHistoryList"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { LoadedAttemptHistory } from "@/lib/attempts/history"
+import { formatAttemptJaDate, type LoadedAttemptHistory } from "@/lib/attempts/history"
 import type { ReactNode } from "react"
 
 type AttemptHistoryViewProps = {
@@ -9,6 +9,7 @@ type AttemptHistoryViewProps = {
   introDescription: string
   statsScopeDescription: string
   categoryTop3Description?: string
+  perfectScoreGroupsDescription?: string
   data: LoadedAttemptHistory
   allowDelete?: boolean
   beforeHistoryList?: ReactNode
@@ -20,6 +21,7 @@ export default function AttemptHistoryView({
   introDescription,
   statsScopeDescription,
   categoryTop3Description,
+  perfectScoreGroupsDescription,
   data,
   allowDelete = true,
   beforeHistoryList,
@@ -32,6 +34,7 @@ export default function AttemptHistoryView({
     correctCount,
     ratePercent,
     topCategoryLowCorrectRates,
+    perfectScoreGroups,
   } = data
 
   return (
@@ -116,6 +119,43 @@ export default function AttemptHistoryView({
                   </li>
                 ))}
               </ol>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {perfectScoreGroupsDescription ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>満点正解した大問</CardTitle>
+            <CardDescription>{perfectScoreGroupsDescription}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {perfectScoreGroups.length === 0 ? (
+              <p className="text-sm text-cream-700">
+                表示中の期間に満点正解した大問はまだありません。
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {perfectScoreGroups.map((group) => (
+                  <li
+                    key={group.groupId}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-cream-300 bg-cream-200 px-4 py-3"
+                  >
+                    <span className="min-w-0 truncate font-medium text-cream-900">
+                      {group.groupTitle}
+                    </span>
+                    <div className="text-right text-sm">
+                      <p className="font-medium text-cream-900">
+                        満点 {group.perfectSessionCount} 回
+                      </p>
+                      <p className="text-xs text-cream-700">
+                        直近 {formatAttemptJaDate(group.latestPerfectAt)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </CardContent>
         </Card>

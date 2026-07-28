@@ -113,6 +113,11 @@ export default async function AdminAttemptsHistoryPage({
           ? `${filteredUserLabel} の表示中データ（直近6ヶ月・採点済みのみ）から、正答率が低いカテゴリを自動集計しています。小問タグがなければ大問タグを使います。`
           : undefined
       }
+      perfectScoreGroupsDescription={
+        filterUserId
+          ? `${filteredUserLabel} が全問正解した大問を表示します（直近6ヶ月）。同じ大問を複数回満点にしている場合は回数も表示します。`
+          : undefined
+      }
       data={data}
       allowDelete
       beforeHistoryList={

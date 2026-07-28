@@ -22,7 +22,15 @@ export type HistoryListEntry = {
   userLabel?: string
   scoreCorrect?: number
   scoreTotal?: number
+  isPerfectScore?: boolean
   standaloneDate?: string
+}
+
+export type PerfectScoreGroup = {
+  groupId: string
+  groupTitle: string
+  perfectSessionCount: number
+  latestPerfectAt: string
 }
 
 type AttemptRow = {
@@ -90,6 +98,7 @@ export type LoadedAttemptHistory = {
   correctCount: number
   ratePercent: number | null
   topCategoryLowCorrectRates: CategoryCorrectRate[]
+  perfectScoreGroups: PerfectScoreGroup[]
 }
 
 function sixMonthsAgoIso() {
@@ -117,6 +126,41 @@ function sessionScore(attempts: AttemptRow[]) {
   const total = attempts.length
   const correct = attempts.filter((a) => a.is_correct === true).length
   return { correct, total }
+}
+
+function isPerfectSession(attempts: AttemptRow[]) {
+  const { correct, total } = sessionScore(attempts)
+  return total > 0 && correct === total && attempts.every((a) => a.is_correct === true)
+}
+
+function computePerfectScoreGroups(items: HistoryListItem[]): PerfectScoreGroup[] {
+  const byGroup = new Map<string, PerfectScoreGroup>()
+
+  for (const item of items) {
+    if (item.kind !== "group_session") continue
+    const { session } = item
+    if (!isPerfectSession(session.attempts)) continue
+
+    const existing = byGroup.get(session.groupId)
+    if (existing) {
+      existing.perfectSessionCount += 1
+      if (session.sessionAt > existing.latestPerfectAt) {
+        existing.latestPerfectAt = session.sessionAt
+      }
+      continue
+    }
+
+    byGroup.set(session.groupId, {
+      groupId: session.groupId,
+      groupTitle: session.groupTitle,
+      perfectSessionCount: 1,
+      latestPerfectAt: session.sessionAt,
+    })
+  }
+
+  return Array.from(byGroup.values()).sort((a, b) =>
+    b.latestPerfectAt.localeCompare(a.latestPerfectAt)
+  )
 }
 
 function formatTextAnswer(answerText: string | null) {
@@ -419,6 +463,7 @@ function toHistoryListEntries(
 
     const { session } = item
     const { correct, total } = sessionScore(session.attempts)
+    const perfect = isPerfectSession(session.attempts)
     return {
       key: item.key,
       kind: "group_session",
@@ -429,6 +474,7 @@ function toHistoryListEntries(
       userLabel: hideUserLabels ? undefined : displayForUser(session.userId),
       scoreCorrect: correct,
       scoreTotal: total,
+      isPerfectScore: perfect,
       subQuestions: session.attempts.map((row) => subQuestionFromAttempt(row)),
     }
   })
@@ -570,6 +616,9 @@ export async function loadAttemptHistory(
       ? computeTopCategoryLowCorrectRates(attempts, 3)
       : []
 
+  const perfectScoreGroups =
+    options.filterUserId ? computePerfectScoreGroups(historyItems) : []
+
   return {
     historyEntries,
     groupSessionCount,
@@ -578,5 +627,6 @@ export async function loadAttemptHistory(
     correctCount,
     ratePercent,
     topCategoryLowCorrectRates,
+    perfectScoreGroups,
   }
 }

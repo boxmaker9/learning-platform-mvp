@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import AttemptSubQuestionRow from "./AttemptSubQuestionRow"
+import SessionScoreIndicator from "./SessionScoreIndicator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -235,9 +236,14 @@ export default function AttemptHistorySection({
                     <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                       <span className="truncate font-medium text-cream-900">{entry.groupTitle}</span>
                       <span className="shrink-0 text-cream-700">（{entry.scoreTotal}門）</span>
-                      <span className="shrink-0 font-medium tabular-nums text-cream-900">
-                        {entry.scoreCorrect}/{entry.scoreTotal}
-                      </span>
+                      {typeof entry.scoreCorrect === "number" &&
+                      typeof entry.scoreTotal === "number" ? (
+                        <SessionScoreIndicator
+                          correct={entry.scoreCorrect}
+                          total={entry.scoreTotal}
+                          isPerfectScore={entry.isPerfectScore === true}
+                        />
+                      ) : null}
                     </span>
                     <span className="shrink-0 text-xs text-cream-800">
                       {entry.sessionDate}
