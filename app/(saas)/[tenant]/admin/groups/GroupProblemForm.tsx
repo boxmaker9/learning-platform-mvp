@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
-import { Eye, History, Plus, Trash2 } from "lucide-react"
+import { Eye, History, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,17 @@ const typeLabels: Record<ProblemFormValues["type"], string> = {
   single_choice: "択一式",
   multiple_choice: "複数選択",
   text: "記述式",
+}
+
+type QueuedProblem = {
+  id: string
+  values: ProblemFormValues
+}
+
+type EditingFromQueue = {
+  id: string
+  insertAt: number
+  snapshot: ProblemFormValues
 }
 
 const baseDefaultValues: ProblemFormValues = {
@@ -116,7 +127,8 @@ export default function GroupProblemForm({
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [tagsTextInput, setTagsTextInput] = useState("")
   const [previousProblem, setPreviousProblem] = useState<ProblemFormValues | null>(null)
-  const [queue, setQueue] = useState<ProblemFormValues[]>([])
+  const [queue, setQueue] = useState<QueuedProblem[]>([])
+  const [editingFromQueue, setEditingFromQueue] = useState<EditingFromQueue | null>(null)
   const [queueError, setQueueError] = useState<string | null>(null)
   const [isQueueSaving, setIsQueueSaving] = useState(false)
   const radioNamePrefix = useId()
@@ -245,6 +257,36 @@ export default function GroupProblemForm({
   const resetFormFields = () => {
     reset(defaultValues)
     setTagsTextInput("")
+    setEditingFromQueue(null)
+  }
+
+  const loadValuesIntoForm = (values: ProblemFormValues) => {
+    reset({
+      ...values,
+      groupId: (groupId || values.groupId || "") as ProblemFormValues["groupId"],
+      tags: values.tags ?? [],
+    })
+    setTagsTextInput((values.tags ?? []).join(", "))
+    if (values.type === "text") {
+      replace([])
+    } else {
+      replace(values.options.length > 0 ? values.options : baseDefaultValues.options)
+    }
+  }
+
+  const cancelQueueEdit = () => {
+    if (!editingFromQueue) return
+
+    setQueue((prev) => {
+      const next = [...prev]
+      next.splice(editingFromQueue.insertAt, 0, {
+        id: editingFromQueue.id,
+        values: editingFromQueue.snapshot,
+      })
+      return next
+    })
+    resetFormFields()
+    setQueueError(null)
   }
 
   const buildCreatePayload = (values: ProblemFormValues): ProblemFormValues => ({
@@ -294,9 +336,42 @@ export default function GroupProblemForm({
     }
     const values = getValues()
     const nextValues = { ...values, tags: parseTagsFromText(tagsTextInput) }
-    setQueue((prev) => [...prev, nextValues])
+
+    if (editingFromQueue) {
+      setQueue((prev) => {
+        const next = [...prev]
+        next.splice(editingFromQueue.insertAt, 0, {
+          id: editingFromQueue.id,
+          values: nextValues,
+        })
+        return next
+      })
+      setEditingFromQueue(null)
+    } else {
+      setQueue((prev) => [...prev, { id: crypto.randomUUID(), values: nextValues }])
+    }
+
     rememberAsPrevious(nextValues)
-    resetFormFields()
+    reset({
+      ...defaultValues,
+      groupId: defaultValues.groupId,
+    })
+    setTagsTextInput("")
+  }
+
+  const startEditQueueItem = (index: number) => {
+    const item = queue[index]
+    if (!item) return
+
+    setQueueError(null)
+    setSubmitSuccess(false)
+    setEditingFromQueue({
+      id: item.id,
+      insertAt: index,
+      snapshot: item.values,
+    })
+    setQueue((prev) => prev.filter((_, queueIndex) => queueIndex !== index))
+    loadValuesIntoForm(item.values)
   }
 
   const saveQueue = async () => {
@@ -306,9 +381,9 @@ export default function GroupProblemForm({
     setSubmitSuccess(false)
     setIsQueueSaving(true)
     try {
-      for (const values of queue) {
+      for (const item of queue) {
         // eslint-disable-next-line no-await-in-loop
-        await saveOne(values)
+        await saveOne(item.values)
       }
       setQueue([])
       setSubmitSuccess(true)
@@ -347,10 +422,22 @@ export default function GroupProblemForm({
         <CardHeader>
           <CardTitle>小問を作成</CardTitle>
           <CardDescription>
-            {groupTitle ? `「${groupTitle}」に小問を追加します。` : "選択した大問に小問を追加します。"}
+            {editingFromQueue
+              ? "ストックの小問を編集中です。内容を直して「小問を更新」を押してください。"
+              : groupTitle
+                ? `「${groupTitle}」に小問を追加します。`
+                : "選択した大問に小問を追加します。"}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {editingFromQueue ? (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              <span>追加予定リストの小問を編集中</span>
+              <Button type="button" variant="secondary" size="sm" onClick={cancelQueueEdit}>
+                編集をキャンセル
+              </Button>
+            </div>
+          ) : null}
           <form className="space-y-6" onSubmit={onSubmit} aria-busy={isSubmitting}>
             <div className="space-y-2">
               <Label htmlFor="groupId-display">大問ID</Label>
@@ -601,18 +688,32 @@ export default function GroupProblemForm({
                   onClick={addToQueue}
                   disabled={isSubmitting || isQueueSaving}
                 >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  小問を追加
+                  {editingFromQueue ? (
+                    <>
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      小問を更新
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      小問を追加
+                    </>
+                  )}
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={saveQueue}
-                  disabled={queue.length === 0 || isSubmitting || isQueueSaving}
+                  disabled={
+                    queue.length === 0 || isSubmitting || isQueueSaving || Boolean(editingFromQueue)
+                  }
                 >
                   {isQueueSaving ? "保存中..." : `まとめて保存 (${queue.length})`}
                 </Button>
-                <Button type="submit" disabled={isSubmitting || isQueueSaving}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || isQueueSaving || Boolean(editingFromQueue)}
+                >
                   {isSubmitting ? "保存中..." : "この小問を保存"}
                 </Button>
               </div>
@@ -621,25 +722,30 @@ export default function GroupProblemForm({
         </CardContent>
       </Card>
 
-      {queue.length > 0 ? (
+      {queue.length > 0 || editingFromQueue ? (
         <Card>
           <CardHeader>
             <CardTitle>追加予定の小問</CardTitle>
-            <CardDescription>「まとめて保存」で一括作成できます。</CardDescription>
+            <CardDescription>
+              鉛筆アイコンで編集できます。「まとめて保存」で一括作成できます。
+            </CardDescription>
           </CardHeader>
           <CardContent>
+            {queue.length === 0 && editingFromQueue ? (
+              <p className="mb-3 text-sm text-cream-700">編集中の小問は左のフォームに表示されています。</p>
+            ) : null}
             <div className="space-y-2">
-              {queue.map((q, idx) => (
+              {queue.map((item, idx) => (
                 <div
-                  key={`${q.title}-${idx}`}
+                  key={item.id}
                   className="flex items-center justify-between gap-3 rounded-md border border-cream-300 bg-white px-3 py-2 text-sm"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{q.title}</p>
-                    <p className="text-xs text-cream-700">{typeLabels[q.type]}</p>
-                    {q.tags && q.tags.length > 0 ? (
+                    <p className="truncate font-medium">{item.values.title}</p>
+                    <p className="text-xs text-cream-700">{typeLabels[item.values.type]}</p>
+                    {item.values.tags && item.values.tags.length > 0 ? (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {q.tags.map((tag) => (
+                        {item.values.tags.map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-[10px]">
                             {tag}
                           </Badge>
@@ -647,17 +753,30 @@ export default function GroupProblemForm({
                       </div>
                     ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="shrink-0 text-red-600 hover:text-red-700"
-                    onClick={() =>
-                      setQueue((prev) => prev.filter((_, pIdx) => pIdx !== idx))
-                    }
-                    aria-label="小問を削除"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-cream-800 hover:text-cream-900"
+                      onClick={() => startEditQueueItem(idx)}
+                      disabled={Boolean(editingFromQueue)}
+                      aria-label="小問を編集"
+                    >
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() =>
+                        setQueue((prev) => prev.filter((_, queueIndex) => queueIndex !== idx))
+                      }
+                      disabled={Boolean(editingFromQueue)}
+                      aria-label="小問を削除"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
